@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cv-scan.local/schemas/cv-parsed.schema.json",
+  "title": "CvParsedEvent",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "eventId",
+    "candidateId",
+    "parsedAt",
+    "name",
+    "position",
+    "email",
+    "verdict",
+    "criteria"
+  ],
+  "properties": {
+    "eventId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "candidateId": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 120
+    },
+    "parsedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 150
+    },
+    "position": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+$"
+    },
+    "posLabel": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string",
+      "format": "email"
+    },
+    "phone": {
+      "type": "string",
+      "pattern": "^\\+\\d[\\d ]{6,20}$"
+    },
+    "city": {
+      "type": "string"
+    },
+    "telegram": {
+      "type": "string"
+    },
+    "totalExp": {
+      "type": "string"
+    },
+    "stack": {
+      "type": "string"
+    },
+    "education": {
+      "type": "string"
+    },
+    "verdict": {
+      "type": "string",
+      "enum": ["FIT", "PARTIAL", "NO_FIT"]
+    },
+    "summary": {
+      "type": "string"
+    },
+    "criteria": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["key", "result", "comment"],
+        "properties": {
+          "key": {
+            "type": "string",
+            "pattern": "^[a-z0-9_:-]+$"
+          },
+          "result": {
+            "type": "string",
+            "enum": ["OK", "PARTIAL", "NO"]
+          },
+          "comment": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "experience": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["period", "company", "title", "duration"],
+        "properties": {
+          "period": { "type": "string" },
+          "company": { "type": "string" },
+          "title": { "type": "string" },
+          "duration": { "type": "string" }
+        }
+      }
+    },
+    "questions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "eventId": "660e8400-e29b-41d4-a716-446655440000",
+  "candidateId": "senior-asanov-bakyt",
+  "parsedAt": "2026-05-20T09:00:00Z",
+  "name": "Асанов Бакыт Эркинович",
+  "position": "java-senior",
+  "posLabel": "Java — главный программист",
+  "email": "senior.asanov@email.com",
+  "phone": "+996 700 111222",
+  "city": "Бишкек",
+  "telegram": "@asanov_arch",
+  "totalExp": "~7 г.",
+  "stack": "Java 17/21, Spring Boot, Kafka, PostgreSQL, Redis, Testcontainers, OpenTelemetry",
+  "education": "КГТУ им. Раззакова, ИТ, 2018",
+  "verdict": "FIT",
+  "summary": "Senior backend developer with production Kafka, Postgres optimization and observability experience.",
+  "criteria": [
+    { "key": "java_spring", "result": "OK", "comment": "Java/Spring — 7 лет" },
+    { "key": "postgres_acid", "result": "OK", "comment": "Postgres, транзакции, индексы, EXPLAIN" },
+    { "key": "kafka_reliability", "result": "OK", "comment": "Kafka producer/consumer, retry, DLQ, idempotency" },
+    { "key": "contracts", "result": "OK", "comment": "OpenAPI, JSON Schema, стабильные ошибки" },
+    { "key": "observability", "result": "PARTIAL", "comment": "Prometheus/Grafana есть, tracing базово" }
+  ],
+  "experience": [
+    { "period": "2021-04 — н.в.", "company": "GovTech Platform", "title": "Senior Java Developer", "duration": "~5 г." },
+    { "period": "2018-07 — 2021-03", "company": "FinTech KG", "title": "Java Developer", "duration": "~2.7 г." }
+  ],
+  "questions": [
+    "Как проектировали идемпотентность Kafka consumer при нескольких репликах?",
+    "Как диагностировали медленный SQL в PostgreSQL?",
+    "Какие метрики и traces добавляли в production-сервис?"
+  ]
+}

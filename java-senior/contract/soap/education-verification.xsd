@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns:tns="http://cv-scan.local/education-verification"
+           targetNamespace="http://cv-scan.local/education-verification"
+           elementFormDefault="qualified">
+
+  <xs:element name="VerifyEducationRequest">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="candidateId" type="xs:string"/>
+        <xs:element name="fullName" type="xs:string"/>
+        <xs:element name="educationText" type="xs:string"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="VerifyEducationResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="candidateId" type="xs:string"/>
+        <xs:element name="result" type="tns:EducationVerificationResult"/>
+        <xs:element name="message" type="xs:string" minOccurs="0"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:simpleType name="EducationVerificationResult">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="VERIFIED"/>
+      <xs:enumeration value="NEEDS_REVIEW"/>
+      <xs:enumeration value="INVALID_FORMAT"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+</xs:schema>

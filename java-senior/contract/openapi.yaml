@@ -1,0 +1,492 @@
+openapi: 3.0.3
+info:
+  title: Screening Decision Service API
+  description: REST API сервиса принятия решений по кандидатам платформы CV-Scan
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080
+
+paths:
+
+  /api/v1/rule-sets:
+    post:
+      summary: Создать набор правил скоринга
+      operationId: createRuleSet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RuleSetRequest'
+      responses:
+        '201':
+          description: Rule set created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuleSetResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+
+  /api/v1/rule-sets/active:
+    get:
+      summary: Получить активный набор правил
+      operationId: getActiveRuleSet
+      parameters:
+        - name: position
+          in: query
+          required: true
+          schema:
+            type: string
+            example: java-senior
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuleSetResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /api/v1/decisions:
+    get:
+      summary: Список решений с фильтрацией и пагинацией
+      operationId: listDecisions
+      parameters:
+        - name: position
+          in: query
+          schema:
+            type: string
+            example: java-senior
+        - name: decision
+          in: query
+          schema:
+            $ref: '#/components/schemas/Decision'
+        - name: sourceVerdict
+          in: query
+          schema:
+            $ref: '#/components/schemas/SourceVerdict'
+        - name: minScore
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 100
+        - name: search
+          in: query
+          description: Поиск по candidateId, имени или email
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+        - name: sort
+          in: query
+          description: "Поле и направление: score,desc | decidedAt,desc | candidateId,asc"
+          schema:
+            type: string
+            default: decidedAt,desc
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DecisionPage'
+
+  /api/v1/decisions/{id}:
+    get:
+      summary: Получить решение по ID
+      operationId: getDecision
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DecisionResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /api/v1/decisions/by-candidate/{candidateId}:
+    get:
+      summary: Получить последнее решение по кандидату
+      operationId: getLatestDecisionByCandidate
+      parameters:
+        - name: candidateId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DecisionResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /api/v1/decisions/{id}/override:
+    patch:
+      summary: Ручной override решения
+      operationId: overrideDecision
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: expectedVersion
+          in: header
+          required: true
+          schema:
+            type: integer
+            minimum: 0
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DecisionOverrideRequest'
+      responses:
+        '200':
+          description: Decision overridden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DecisionResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/VersionConflictError'
+
+  /api/v1/decisions/{id}/audit:
+    get:
+      summary: Audit trail по решению
+      operationId: getDecisionAudit
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AuditEntry'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+components:
+  schemas:
+
+    SourceVerdict:
+      type: string
+      enum: [FIT, PARTIAL, NO_FIT]
+
+    Decision:
+      type: string
+      enum: [AUTO_APPROVE, NEEDS_REVIEW, AUTO_REJECT]
+
+    CriteriaResult:
+      type: string
+      enum: [OK, PARTIAL, NO]
+
+    RuleResult:
+      type: string
+      enum: [PASS, WARN, FAIL]
+
+    AuditAction:
+      type: string
+      enum: [CREATED, UPDATED_BY_REPLAY, OVERRIDDEN]
+
+    CriterionWeight:
+      type: object
+      required: [key, weight]
+      properties:
+        key:
+          type: string
+          pattern: '^[a-z0-9_:-]+$'
+        weight:
+          type: integer
+          minimum: 1
+          maximum: 100
+
+    RuleSetRequest:
+      type: object
+      required: [position, version, activeFrom, minApproveScore, maxRejectScore, weights]
+      properties:
+        position:
+          type: string
+          pattern: '^[a-z0-9-]+$'
+          example: java-senior
+        version:
+          type: string
+          pattern: '^v[0-9]+$'
+          example: v1
+        activeFrom:
+          type: string
+          format: date-time
+        minApproveScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+          example: 80
+        maxRejectScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+          example: 45
+        weights:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/CriterionWeight'
+
+    RuleSetResponse:
+      allOf:
+        - $ref: '#/components/schemas/RuleSetRequest'
+        - type: object
+          required: [id, createdAt]
+          properties:
+            id:
+              type: string
+              format: uuid
+            createdAt:
+              type: string
+              format: date-time
+
+    CriteriaItem:
+      type: object
+      required: [key, result, comment]
+      properties:
+        key:
+          type: string
+        result:
+          $ref: '#/components/schemas/CriteriaResult'
+        comment:
+          type: string
+
+    RuleEvaluation:
+      type: object
+      required: [key, result, points, reason]
+      properties:
+        key:
+          type: string
+        result:
+          $ref: '#/components/schemas/RuleResult'
+        points:
+          type: integer
+        reason:
+          type: string
+
+    DecisionResponse:
+      type: object
+      required: [id, candidateId, parsedAt, name, email, position, sourceVerdict, decision, score, ruleSetVersion, ruleResults, decidedAt, version, overridden]
+      properties:
+        id:
+          type: string
+          format: uuid
+        candidateId:
+          type: string
+        parsedAt:
+          type: string
+          format: date-time
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        position:
+          type: string
+        sourceVerdict:
+          $ref: '#/components/schemas/SourceVerdict'
+        decision:
+          $ref: '#/components/schemas/Decision'
+        score:
+          type: integer
+          minimum: 0
+          maximum: 100
+        ruleSetVersion:
+          type: string
+        ruleResults:
+          type: array
+          items:
+            $ref: '#/components/schemas/RuleEvaluation'
+        decidedAt:
+          type: string
+          format: date-time
+        version:
+          type: integer
+        overridden:
+          type: boolean
+        overrideReason:
+          type: string
+          nullable: true
+
+    DecisionOverrideRequest:
+      type: object
+      required: [decision, reason]
+      properties:
+        decision:
+          $ref: '#/components/schemas/Decision'
+        reason:
+          type: string
+          minLength: 10
+          maxLength: 1000
+
+    DecisionPage:
+      type: object
+      required: [content, page, size, totalElements, totalPages]
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/DecisionResponse'
+        page:
+          type: integer
+        size:
+          type: integer
+        totalElements:
+          type: integer
+        totalPages:
+          type: integer
+
+    AuditEntry:
+      type: object
+      required: [id, decisionId, action, actor, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        decisionId:
+          type: string
+          format: uuid
+        action:
+          $ref: '#/components/schemas/AuditAction'
+        actor:
+          type: string
+        payload:
+          type: object
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    ErrorResponse:
+      type: object
+      required: [status, error, message, timestamp, path]
+      properties:
+        status:
+          type: integer
+        error:
+          type: string
+        message:
+          type: string
+        details:
+          type: array
+          nullable: true
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              message:
+                type: string
+              pointer:
+                type: string
+                nullable: true
+        timestamp:
+          type: string
+          format: date-time
+        path:
+          type: string
+
+  responses:
+    ValidationError:
+      description: Ошибка валидации входных данных
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: 400
+            error: VALIDATION_ERROR
+            message: "Ошибка валидации входных данных"
+            details:
+              - field: weights[0].key
+                pointer: "/weights/0/key"
+                message: "Обязательное поле"
+            timestamp: "2026-06-04T12:00:00Z"
+            path: "/api/v1/rule-sets"
+
+    NotFoundError:
+      description: Ресурс не найден
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: 404
+            error: RESOURCE_NOT_FOUND
+            message: "Решение не найдено"
+            timestamp: "2026-06-04T12:00:00Z"
+            path: "/api/v1/decisions/550e8400-e29b-41d4-a716-446655440000"
+
+    ConflictError:
+      description: Конфликт уникальности
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: 409
+            error: DUPLICATE_RULE_SET
+            message: "Rule set java-senior/v1 уже существует"
+            timestamp: "2026-06-04T12:00:00Z"
+            path: "/api/v1/rule-sets"
+
+    VersionConflictError:
+      description: Конфликт версии при конкурентном обновлении
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: 409
+            error: VERSION_CONFLICT
+            message: "Ожидалась версия 2, текущая версия 3"
+            timestamp: "2026-06-04T12:00:00Z"
+            path: "/api/v1/decisions/550e8400-e29b-41d4-a716-446655440000/override"
