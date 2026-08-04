@@ -14,6 +14,13 @@ java {
     }
 }
 
+// Records are used as Jackson-serialized JSONB payloads (rule_sets.weights,
+// screening_decisions.rule_results) and as Spring MVC request/response DTOs;
+// both need constructor parameter names at runtime to (de)serialize by name.
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs << '-parameters'
+}
+
 // Spring Boot 3.5.x manages an older 1.x Testcontainers BOM by default; the
 // TestcontainersConfiguration test fixture already targets the 2.x module layout
 // (org.testcontainers.kafka.KafkaContainer / org.testcontainers.postgresql.PostgreSQLContainer),
