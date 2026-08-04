@@ -4,16 +4,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.kafka.clients.consumer.Consumer;
-import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.common.serialization.StringDeserializer;
-import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
+import org.springframework.kafka.core.ConsumerFactory;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 /** Shared helpers for Testcontainers-backed integration tests - not itself a test class. */
@@ -42,14 +38,19 @@ final class KafkaTestSupport {
         return MAPPER.readTree(json);
     }
 
-    static Consumer<String, String> createConsumer(String bootstrapServers, String topic) {
-        Map<String, Object> props = new HashMap<>();
-        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-        props.put(ConsumerConfig.GROUP_ID_CONFIG, "it-consumer-" + UUID.randomUUID());
-        props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "true");
-        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
-        Consumer<String, String> consumer = new DefaultKafkaConsumerFactory<>(
-                props, new StringDeserializer(), new StringDeserializer()).createConsumer();
+    /**
+     * Builds a raw consumer from Spring's own autoconfigured {@link ConsumerFactory} bean,
+     * only overriding the group id. This is deliberate: a hand-built props map using
+     * {@code @Value("${spring.kafka.bootstrap-servers}")} reads the *static*
+     * application.yml default (localhost:9092) rather than the value Testcontainers'
+     * {@code @ServiceConnection} actually wires up - @ServiceConnection supplies a
+     * ConnectionDetails bean that autoconfigured Kafka beans consume directly, it does not
+     * rewrite the Environment property. Going through the autoconfigured ConsumerFactory
+     * sidesteps that entirely, since it's the same factory the rest of the app already uses
+     * successfully.
+     */
+    static Consumer<String, String> createConsumer(ConsumerFactory<String, String> consumerFactory, String topic) {
+        Consumer<String, String> consumer = consumerFactory.createConsumer("it-consumer-" + UUID.randomUUID(), null);
         consumer.subscribe(List.of(topic));
         return consumer;
     }

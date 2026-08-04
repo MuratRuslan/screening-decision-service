@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 
 import java.time.Duration;
@@ -32,6 +33,9 @@ class DlqIT {
     private KafkaTemplate<String, String> kafkaTemplate;
 
     @Autowired
+    private ConsumerFactory<String, String> consumerFactory;
+
+    @Autowired
     private ScreeningDecisionRepository decisionRepository;
 
     @Value("${app.kafka.topics.cv-parsed}")
@@ -40,15 +44,12 @@ class DlqIT {
     @Value("${app.kafka.topics.decision-dlq}")
     private String dlqTopic;
 
-    @Value("${spring.kafka.bootstrap-servers}")
-    private String bootstrapServers;
-
     @Test
     void invalidEventIsRoutedToDlqAndNextValidEventStillProcesses() throws Exception {
         String candidateId = KafkaTestSupport.uniqueCandidateId("it-invalid");
         String invalidJson = invalidPayload(candidateId);
 
-        try (Consumer<String, String> dlqConsumer = KafkaTestSupport.createConsumer(bootstrapServers, dlqTopic)) {
+        try (Consumer<String, String> dlqConsumer = KafkaTestSupport.createConsumer(consumerFactory, dlqTopic)) {
             kafkaTemplate.send(cvParsedTopic, candidateId, invalidJson).get(10, TimeUnit.SECONDS);
 
             boolean found = false;

@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 
 import java.time.Duration;
@@ -40,14 +41,14 @@ class CvParsedFlowIT {
     @Autowired
     private OutboxRepository outboxRepository;
 
+    @Autowired
+    private ConsumerFactory<String, String> consumerFactory;
+
     @Value("${app.kafka.topics.cv-parsed}")
     private String cvParsedTopic;
 
     @Value("${app.kafka.topics.decision-created}")
     private String decisionCreatedTopic;
-
-    @Value("${spring.kafka.bootstrap-servers}")
-    private String bootstrapServers;
 
     @Test
     void validEventProducesDecisionAndPublishesDecisionCreated() throws Exception {
@@ -73,7 +74,7 @@ class CvParsedFlowIT {
             assertThat(outbox.get().getStatus()).isEqualTo(OutboxStatus.SENT);
         });
 
-        try (Consumer<String, String> consumer = KafkaTestSupport.createConsumer(bootstrapServers, decisionCreatedTopic)) {
+        try (Consumer<String, String> consumer = KafkaTestSupport.createConsumer(consumerFactory, decisionCreatedTopic)) {
             boolean found = false;
             long deadline = System.currentTimeMillis() + 15_000;
             while (!found && System.currentTimeMillis() < deadline) {

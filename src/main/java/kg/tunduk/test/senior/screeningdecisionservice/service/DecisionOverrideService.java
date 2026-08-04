@@ -59,6 +59,12 @@ public class DecisionOverrideService {
         Decision previousDecision = decision.getDecision();
         decision.applyOverride(request.decision(), request.reason());
 
+        // Flush now (rather than waiting for commit) so Hibernate actually issues the
+        // @Version UPDATE and increments decision.version in memory before we read it below
+        // for the response DTO - without this, the returned version would still show the
+        // pre-override value even though the DB row (and a subsequent GET) would be correct.
+        decisionRepository.saveAndFlush(decision);
+
         auditRepository.save(new DecisionAuditEntity(UUID.randomUUID(), decision.getId(), AuditAction.OVERRIDDEN, ACTOR,
                 overridePayload(previousDecision, request, expectedVersion), Instant.now()));
 

@@ -27,30 +27,30 @@ VALUES
      'Ташиев Арстан Куанышевич', 'arstan.tashiev@email.com', 'java-senior', 'PARTIAL', 'NEEDS_REVIEW', 67, 'v1',
      '[
         {"key": "java_spring", "result": "PASS", "points": 25, "reason": "OK: 5 лет Java/Spring"},
-        {"key": "postgres_acid", "result": "PARTIAL", "points": 10, "reason": "PARTIAL: базовый SQL, без EXPLAIN"},
+        {"key": "postgres_acid", "result": "WARN", "points": 10, "reason": "PARTIAL: базовый SQL, без EXPLAIN"},
         {"key": "kafka_reliability", "result": "PASS", "points": 25, "reason": "OK: consumer groups, retry"},
-        {"key": "contracts", "result": "PARTIAL", "points": 7, "reason": "PARTIAL: OpenAPI без JSON Schema"},
-        {"key": "observability", "result": "NO", "points": 0, "reason": "FAIL: метрики отсутствуют"}
+        {"key": "contracts", "result": "WARN", "points": 7, "reason": "PARTIAL: OpenAPI без JSON Schema"},
+        {"key": "observability", "result": "FAIL", "points": 0, "reason": "FAIL: метрики отсутствуют"}
       ]'::jsonb, '2026.06', '2026-06-15T14:00:00Z', 1, FALSE, NULL),
 
     ('22222222-2222-2222-2222-222222222204', 'senior-orozova-jamilya', '2026-06-16T09:45:00Z',
      'Орозова Жамиля Талантовна', 'jamilya.orozova@email.com', 'java-senior', 'NO_FIT', 'AUTO_REJECT', 12, 'v1',
      '[
-        {"key": "java_spring", "result": "NO", "points": 0, "reason": "FAIL: нет опыта Spring"},
-        {"key": "postgres_acid", "result": "NO", "points": 0, "reason": "FAIL: нет опыта Postgres"},
-        {"key": "kafka_reliability", "result": "PARTIAL", "points": 12, "reason": "PARTIAL: только базовый producer"},
-        {"key": "contracts", "result": "NO", "points": 0, "reason": "FAIL: нет опыта контрактной разработки"},
-        {"key": "observability", "result": "NO", "points": 0, "reason": "FAIL: нет опыта"}
+        {"key": "java_spring", "result": "FAIL", "points": 0, "reason": "FAIL: нет опыта Spring"},
+        {"key": "postgres_acid", "result": "FAIL", "points": 0, "reason": "FAIL: нет опыта Postgres"},
+        {"key": "kafka_reliability", "result": "WARN", "points": 12, "reason": "PARTIAL: только базовый producer"},
+        {"key": "contracts", "result": "FAIL", "points": 0, "reason": "FAIL: нет опыта контрактной разработки"},
+        {"key": "observability", "result": "FAIL", "points": 0, "reason": "FAIL: нет опыта"}
       ]'::jsonb, '2026.06', '2026-06-18T10:00:00Z', 1, FALSE, NULL),
 
     ('22222222-2222-2222-2222-222222222205', 'senior-bekov-emil', '2026-06-19T13:20:00Z',
      'Беков Эмиль Жумабекович', 'emil.bekov@email.com', 'java-senior', 'PARTIAL', 'AUTO_APPROVE', 67, 'v1',
      '[
         {"key": "java_spring", "result": "PASS", "points": 25, "reason": "OK: 6 лет Java/Spring"},
-        {"key": "postgres_acid", "result": "PARTIAL", "points": 10, "reason": "PARTIAL: индексы без анализа планов"},
+        {"key": "postgres_acid", "result": "WARN", "points": 10, "reason": "PARTIAL: индексы без анализа планов"},
         {"key": "kafka_reliability", "result": "PASS", "points": 25, "reason": "OK: DLQ, retry с backoff"},
-        {"key": "contracts", "result": "PARTIAL", "points": 7, "reason": "PARTIAL: контракт не версионируется"},
-        {"key": "observability", "result": "NO", "points": 0, "reason": "FAIL: метрики не настроены"}
+        {"key": "contracts", "result": "WARN", "points": 7, "reason": "PARTIAL: контракт не версионируется"},
+        {"key": "observability", "result": "FAIL", "points": 0, "reason": "FAIL: метрики не настроены"}
       ]'::jsonb, '2026.06', '2026-06-20T09:00:00Z', 2, TRUE,
      'Техническое интервью подтвердило уровень выше автооценки, решение утверждено вручную'),
 
@@ -60,7 +60,7 @@ VALUES
         {"key": "java_spring", "result": "PASS", "points": 25, "reason": "OK: архитектор, 9 лет"},
         {"key": "postgres_acid", "result": "PASS", "points": 20, "reason": "OK: репликация, тюнинг"},
         {"key": "kafka_reliability", "result": "PASS", "points": 25, "reason": "OK: exactly-once семантика"},
-        {"key": "contracts", "result": "PARTIAL", "points": 7, "reason": "PARTIAL: только REST, без SOAP"},
+        {"key": "contracts", "result": "WARN", "points": 7, "reason": "PARTIAL: только REST, без SOAP"},
         {"key": "observability", "result": "PASS", "points": 15, "reason": "OK: distributed tracing"}
       ]'::jsonb, '2026.06', '2026-06-22T15:00:00Z', 1, FALSE, NULL),
 
@@ -68,10 +68,10 @@ VALUES
      'Сыдыков Нурлан Асанбекович', 'nurlan.sydykov@email.com', 'java-senior', 'NO_FIT', 'AUTO_REJECT', 25, 'v1',
      '[
         {"key": "java_spring", "result": "PASS", "points": 25, "reason": "OK: крепкий middle+"},
-        {"key": "postgres_acid", "result": "NO", "points": 0, "reason": "FAIL: нет продакшн опыта с БД"},
-        {"key": "kafka_reliability", "result": "NO", "points": 0, "reason": "FAIL: не работал с Kafka"},
-        {"key": "contracts", "result": "NO", "points": 0, "reason": "FAIL: нет контрактной разработки"},
-        {"key": "observability", "result": "NO", "points": 0, "reason": "FAIL: нет опыта"}
+        {"key": "postgres_acid", "result": "FAIL", "points": 0, "reason": "FAIL: нет продакшн опыта с БД"},
+        {"key": "kafka_reliability", "result": "FAIL", "points": 0, "reason": "FAIL: не работал с Kafka"},
+        {"key": "contracts", "result": "FAIL", "points": 0, "reason": "FAIL: нет контрактной разработки"},
+        {"key": "observability", "result": "FAIL", "points": 0, "reason": "FAIL: нет опыта"}
       ]'::jsonb, '2026.06', '2026-06-25T10:00:00Z', 1, FALSE, NULL),
 
     ('22222222-2222-2222-2222-222222222208', 'senior-toktosunova-elvira', '2026-06-27T09:10:00Z',
@@ -79,9 +79,9 @@ VALUES
      '[
         {"key": "java_spring", "result": "PASS", "points": 25, "reason": "OK: 5 лет Java/Spring"},
         {"key": "postgres_acid", "result": "PASS", "points": 20, "reason": "OK: индексы, транзакции"},
-        {"key": "kafka_reliability", "result": "NO", "points": 0, "reason": "FAIL: только теория"},
-        {"key": "contracts", "result": "PARTIAL", "points": 7, "reason": "PARTIAL: без JSON Schema"},
-        {"key": "observability", "result": "PARTIAL", "points": 7, "reason": "PARTIAL: только логи"}
+        {"key": "kafka_reliability", "result": "FAIL", "points": 0, "reason": "FAIL: только теория"},
+        {"key": "contracts", "result": "WARN", "points": 7, "reason": "PARTIAL: без JSON Schema"},
+        {"key": "observability", "result": "WARN", "points": 7, "reason": "PARTIAL: только логи"}
       ]'::jsonb, '2026.06', '2026-06-28T13:00:00Z', 1, FALSE, NULL),
 
 -- Seed decisions scored against rule-set v2 (active from 2026-07-01)
@@ -99,21 +99,21 @@ VALUES
      'Усенова Чолпон Бекназаровна', 'cholpon.usenova@email.com', 'java-senior', 'PARTIAL', 'AUTO_REJECT', 52, 'v2',
      '[
         {"key": "java_spring", "result": "PASS", "points": 20, "reason": "OK: 4 года Java/Spring"},
-        {"key": "postgres_acid", "result": "PARTIAL", "points": 7, "reason": "PARTIAL: без EXPLAIN ANALYZE"},
-        {"key": "kafka_reliability", "result": "PARTIAL", "points": 15, "reason": "PARTIAL: без DLQ"},
-        {"key": "contracts", "result": "PARTIAL", "points": 10, "reason": "PARTIAL: контракт не зафиксирован"},
-        {"key": "observability", "result": "NO", "points": 0, "reason": "FAIL: метрики отсутствуют"}
+        {"key": "postgres_acid", "result": "WARN", "points": 7, "reason": "PARTIAL: без EXPLAIN ANALYZE"},
+        {"key": "kafka_reliability", "result": "WARN", "points": 15, "reason": "PARTIAL: без DLQ"},
+        {"key": "contracts", "result": "WARN", "points": 10, "reason": "PARTIAL: контракт не зафиксирован"},
+        {"key": "observability", "result": "FAIL", "points": 0, "reason": "FAIL: метрики отсутствуют"}
       ]'::jsonb, '2026.06', '2026-07-08T12:00:00Z', 2, TRUE,
      'После технического интервью принято решение отклонить кандидатуру'),
 
     ('22222222-2222-2222-2222-22222222220b', 'senior-imanalieva-begimai', '2026-07-12T08:00:00Z',
      'Иманалиева Бегимай Уланбековна', 'begimai.imanalieva@email.com', 'java-senior', 'NO_FIT', 'AUTO_REJECT', 0, 'v2',
      '[
-        {"key": "java_spring", "result": "NO", "points": 0, "reason": "FAIL: не соответствует профилю"},
-        {"key": "postgres_acid", "result": "NO", "points": 0, "reason": "FAIL: не соответствует профилю"},
-        {"key": "kafka_reliability", "result": "NO", "points": 0, "reason": "FAIL: не соответствует профилю"},
-        {"key": "contracts", "result": "NO", "points": 0, "reason": "FAIL: не соответствует профилю"},
-        {"key": "observability", "result": "NO", "points": 0, "reason": "FAIL: не соответствует профилю"}
+        {"key": "java_spring", "result": "FAIL", "points": 0, "reason": "FAIL: не соответствует профилю"},
+        {"key": "postgres_acid", "result": "FAIL", "points": 0, "reason": "FAIL: не соответствует профилю"},
+        {"key": "kafka_reliability", "result": "FAIL", "points": 0, "reason": "FAIL: не соответствует профилю"},
+        {"key": "contracts", "result": "FAIL", "points": 0, "reason": "FAIL: не соответствует профилю"},
+        {"key": "observability", "result": "FAIL", "points": 0, "reason": "FAIL: не соответствует профилю"}
       ]'::jsonb, '2026.06', '2026-07-15T09:00:00Z', 1, FALSE, NULL),
 
     ('22222222-2222-2222-2222-22222222220c', 'senior-dzhaparov-ruslan', '2026-07-18T09:30:00Z',
@@ -121,7 +121,7 @@ VALUES
      '[
         {"key": "java_spring", "result": "PASS", "points": 20, "reason": "OK: 7 лет Java/Spring"},
         {"key": "postgres_acid", "result": "PASS", "points": 15, "reason": "OK: тюнинг запросов"},
-        {"key": "kafka_reliability", "result": "PARTIAL", "points": 15, "reason": "PARTIAL: без exactly-once"},
+        {"key": "kafka_reliability", "result": "WARN", "points": 15, "reason": "PARTIAL: без exactly-once"},
         {"key": "contracts", "result": "PASS", "points": 20, "reason": "OK: строгое соответствие контракту"},
         {"key": "observability", "result": "PASS", "points": 15, "reason": "OK: Prometheus, Grafana"}
       ]'::jsonb, '2026.06', '2026-07-20T14:30:00Z', 1, FALSE, NULL),
@@ -129,9 +129,9 @@ VALUES
     ('22222222-2222-2222-2222-22222222220d', 'senior-kadyrova-nurgul', '2026-07-22T10:00:00Z',
      'Кадырова Нургуль Эмильевна', 'nurgul.kadyrova@email.com', 'java-senior', 'PARTIAL', 'NEEDS_REVIEW', 72, 'v2',
      '[
-        {"key": "java_spring", "result": "PARTIAL", "points": 10, "reason": "PARTIAL: 3 года, junior+ уровень"},
+        {"key": "java_spring", "result": "WARN", "points": 10, "reason": "PARTIAL: 3 года, junior+ уровень"},
         {"key": "postgres_acid", "result": "PASS", "points": 15, "reason": "OK: транзакции, блокировки"},
         {"key": "kafka_reliability", "result": "PASS", "points": 30, "reason": "OK: consumer rebalancing, DLQ"},
-        {"key": "contracts", "result": "PARTIAL", "points": 10, "reason": "PARTIAL: OpenAPI без JSON Schema"},
-        {"key": "observability", "result": "PARTIAL", "points": 7, "reason": "PARTIAL: базовые логи"}
+        {"key": "contracts", "result": "WARN", "points": 10, "reason": "PARTIAL: OpenAPI без JSON Schema"},
+        {"key": "observability", "result": "WARN", "points": 7, "reason": "PARTIAL: базовые логи"}
       ]'::jsonb, '2026.06', '2026-07-25T11:15:00Z', 1, FALSE, NULL);

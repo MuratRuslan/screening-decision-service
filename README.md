@@ -67,14 +67,35 @@ validation (empty `name`, invalid `email` — routed to `screening.decision.dlq`
 Pointer diagnostics), and 1 exact duplicate of the first row (same `candidateId` +
 `parsedAt` — silently ignored, no second decision or second `screening.decision.created`).
 
-> **Sandbox note:** this implementation was built in an environment without Docker
-> available, so `docker compose up`, `bootRun` against a live Postgres/Kafka, and the
-> Testcontainers-backed tests (`ScreeningDecisionApplicationTests`, the full `integration/`
-> suite) could not be executed here. Everything DB/Kafka-independent — 68 unit tests
-> covering scoring, semantic normalization, JSON Schema/XSD validation, the consumer
-> pipeline, outbox, prechecks, and all service-layer logic — passes. Please run
-> `./gradlew test` with Docker available to exercise the rest before relying on this as a
-> final sign-off.
+> **Verified with Docker:** this implementation was originally built in a sandbox without
+> Docker (only the 68 Docker-independent unit tests could run there). It has since been
+> re-verified with Docker available: `./gradlew test` passes **79/79**, including all five
+> Testcontainers integration test classes and the app's own context-load test against real
+> Postgres and Kafka. `docker compose up -d && ./gradlew bootRun` was also run directly —
+> publishing the sample event produced a decision, an outbox row that reached `SENT`, and a
+> real `screening.decision.created` message on the broker with a matching `decisionId`/
+> `score`; `/actuator/health` and `/actuator/prometheus` responded correctly.
+>
+> Three real bugs were caught by this end-to-end verification and are now fixed:
+> 1. The V6 seed migration used the wrong JSON enum values for `RuleEvaluation.result`
+>    (`NO`/`PARTIAL`, copied from the unrelated `CriterionResult` enum, instead of
+>    `RuleResult`'s actual `FAIL`/`WARN`) — this crashed JSON deserialization for 11 of the
+>    13 seeded decisions the moment they were read back via JPA.
+> 2. `PATCH /override`'s response showed the *pre*-override `version` because the entity's
+>    in-memory `@Version` field only updates once Hibernate actually flushes the UPDATE,
+>    which by default happens at transaction commit — after the response DTO had already
+>    been built. Fixed by flushing explicitly before building the response.
+> 3. `docker-compose.yml`'s Kafka service used a dual-listener config that the official
+>    `apache/kafka` image rejected at startup (`advertised.listeners` ended up containing
+>    the non-routable `0.0.0.0`); replaced with the simpler single-listener KRaft pattern
+>    from Kafka's own quickstart compose example.
+
+`kafka-console-producer.sh`/`.bat` work too — note it sends each **line** of stdin as a
+separate message, so multi-line pretty-printed JSON must be collapsed to one line first
+(exactly what the `tr -d '\n'` above does); skipping that turns one valid event into many
+garbage ones. The service handles that gracefully either way (every malformed line lands
+in the DLQ individually, without stalling the partition), but it's not what you want for a
+manual smoke test.
 
 ## Configuration
 
@@ -229,8 +250,8 @@ rule-set creation (duplicate, unknown-canonical-key), and decision override
 
 Integration tests (`src/test/.../integration/`, Testcontainers with **real** Postgres and
 Kafka via the existing `TestcontainersConfiguration`) cover the end-to-end flows described
-in TASK.md — see that package for the current list. These require Docker; see the sandbox
-note above.
+in TASK.md — see that package for the current list. These require Docker; all pass — see
+the verification note above.
 
 ## What wasn't done / known limitations
 
