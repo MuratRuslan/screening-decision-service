@@ -45,6 +45,12 @@ public class GlobalExceptionHandler {
                 ErrorResponse.of(400, "VALIDATION_ERROR", ex.getMessage(), request.getRequestURI()));
     }
 
+    @ExceptionHandler(RequestValidationException.class)
+    public ResponseEntity<ErrorResponse> handleRequestValidation(RequestValidationException ex, HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                ErrorResponse.of(400, "VALIDATION_ERROR", ex.getMessage(), request.getRequestURI(), ex.getDetails()));
+    }
+
     @ExceptionHandler(NotFoundException.class)
     public ResponseEntity<ErrorResponse> handleNotFound(NotFoundException ex, HttpServletRequest request) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(

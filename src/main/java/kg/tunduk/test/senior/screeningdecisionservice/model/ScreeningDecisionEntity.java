@@ -99,6 +99,10 @@ public class ScreeningDecisionEntity {
         this.ruleResults = ruleResults;
         this.semanticCatalogVersion = semanticCatalogVersion;
         this.decidedAt = decidedAt;
+        // Hibernate writes whatever is in this field at INSERT time as the row's initial
+        // version (it does not force a numeric @Version to start at 0) - 1 here matches the
+        // seed migrations (V6/V7), which assume never-overridden rows start at version 1.
+        this.version = 1;
         this.overridden = false;
     }
 
