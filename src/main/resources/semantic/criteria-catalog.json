@@ -1,0 +1,40 @@
+{
+  "version": "2026.06",
+  "resources": [
+    {
+      "id": "java_spring",
+      "label": "Java and Spring",
+      "aliases": ["java", "spring", "spring_boot"],
+      "category": "backend_core",
+      "requiredFor": ["java-senior"]
+    },
+    {
+      "id": "postgres_acid",
+      "label": "PostgreSQL, ACID and SQL optimization",
+      "aliases": ["postgres", "sql_optimization", "postgresql"],
+      "category": "database",
+      "requiredFor": ["java-senior"]
+    },
+    {
+      "id": "kafka_reliability",
+      "label": "Kafka reliability patterns",
+      "aliases": ["kafka", "kafka_retry", "dlq"],
+      "category": "messaging",
+      "requiredFor": ["java-senior"]
+    },
+    {
+      "id": "contracts",
+      "label": "Contract-first APIs and schema validation",
+      "aliases": ["openapi", "json_schema", "xsd", "soap"],
+      "category": "contracts",
+      "requiredFor": ["java-senior"]
+    },
+    {
+      "id": "observability",
+      "label": "Production observability",
+      "aliases": ["prometheus", "grafana", "opentelemetry", "logs"],
+      "category": "operations",
+      "requiredFor": ["java-senior"]
+    }
+  ]
+}
