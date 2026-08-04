@@ -7,6 +7,8 @@ import kg.tunduk.test.senior.screeningdecisionservice.dto.kafka.CvParsedEvent;
 import kg.tunduk.test.senior.screeningdecisionservice.dto.rest.ErrorDetail;
 import kg.tunduk.test.senior.screeningdecisionservice.exception.NonRetryableEventException;
 import kg.tunduk.test.senior.screeningdecisionservice.model.RuleSetEntity;
+import kg.tunduk.test.senior.screeningdecisionservice.precheck.PrecheckOrchestrator;
+import kg.tunduk.test.senior.screeningdecisionservice.precheck.PrecheckResult;
 import kg.tunduk.test.senior.screeningdecisionservice.repository.RuleSetRepository;
 import kg.tunduk.test.senior.screeningdecisionservice.scoring.RuleSet;
 import kg.tunduk.test.senior.screeningdecisionservice.scoring.ScoreCalculator;
@@ -42,6 +44,7 @@ public class DecisionProcessingService {
     private final CvParsedJsonSchemaValidator schemaValidator;
     private final CriteriaCatalog criteriaCatalog;
     private final RuleSetRepository ruleSetRepository;
+    private final PrecheckOrchestrator precheckOrchestrator;
     private final DecisionPersistenceService decisionPersistenceService;
     private final ObjectMapper objectMapper;
     private final UnknownKeyPolicy unknownKeyPolicy;
@@ -49,12 +52,14 @@ public class DecisionProcessingService {
     public DecisionProcessingService(CvParsedJsonSchemaValidator schemaValidator,
                                       CriteriaCatalog criteriaCatalog,
                                       RuleSetRepository ruleSetRepository,
+                                      PrecheckOrchestrator precheckOrchestrator,
                                       DecisionPersistenceService decisionPersistenceService,
                                       ObjectMapper objectMapper,
                                       @Value("${app.semantic.unknown-key-policy:AUDIT}") UnknownKeyPolicy unknownKeyPolicy) {
         this.schemaValidator = schemaValidator;
         this.criteriaCatalog = criteriaCatalog;
         this.ruleSetRepository = ruleSetRepository;
+        this.precheckOrchestrator = precheckOrchestrator;
         this.decisionPersistenceService = decisionPersistenceService;
         this.objectMapper = objectMapper;
         this.unknownKeyPolicy = unknownKeyPolicy;
@@ -84,8 +89,14 @@ public class DecisionProcessingService {
         RuleSet ruleSet = toDomain(ruleSetEntity);
         ScoreOutcome outcome = ScoreCalculator.calculate(ruleSet, normalization.byCanonicalKey());
 
+        List<PrecheckResult> precheckResults = precheckOrchestrator.runAll(event);
+        precheckResults.forEach(r -> log.info(
+                "Precheck completed candidateId={} check={} status={} durationMs={} detail={}",
+                event.candidateId(), r.name(), r.status(), r.durationMs(), r.detail()));
+
         try {
-            decisionPersistenceService.persist(event, ruleSetEntity, outcome, criteriaCatalog.version(), normalization);
+            decisionPersistenceService.persist(event, ruleSetEntity, outcome, criteriaCatalog.version(),
+                    normalization, precheckResults);
             log.info("Decision created candidateId={} decision={} score={} ruleSetVersion={}",
                     event.candidateId(), outcome.decision(), outcome.score(), ruleSetEntity.getVersion());
         } catch (DataIntegrityViolationException e) {

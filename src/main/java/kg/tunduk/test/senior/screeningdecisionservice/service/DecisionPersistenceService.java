@@ -11,6 +11,7 @@ import kg.tunduk.test.senior.screeningdecisionservice.model.ScreeningDecisionEnt
 import kg.tunduk.test.senior.screeningdecisionservice.model.SourceVerdict;
 import kg.tunduk.test.senior.screeningdecisionservice.outbox.OutboxEvent;
 import kg.tunduk.test.senior.screeningdecisionservice.outbox.OutboxRepository;
+import kg.tunduk.test.senior.screeningdecisionservice.precheck.PrecheckResult;
 import kg.tunduk.test.senior.screeningdecisionservice.repository.DecisionAuditRepository;
 import kg.tunduk.test.senior.screeningdecisionservice.repository.ScreeningDecisionRepository;
 import kg.tunduk.test.senior.screeningdecisionservice.scoring.ScoreOutcome;
@@ -21,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -63,7 +65,8 @@ public class DecisionPersistenceService {
      */
     @Transactional
     public UUID persist(CvParsedEvent event, RuleSetEntity ruleSet, ScoreOutcome outcome,
-                         String semanticCatalogVersion, NormalizationResult normalization) {
+                         String semanticCatalogVersion, NormalizationResult normalization,
+                         List<PrecheckResult> precheckResults) {
         Instant decidedAt = Instant.now();
 
         ScreeningDecisionEntity decision = new ScreeningDecisionEntity(
@@ -86,7 +89,7 @@ public class DecisionPersistenceService {
 
         auditRepository.save(new DecisionAuditEntity(
                 UUID.randomUUID(), decision.getId(), AuditAction.CREATED, ACTOR,
-                auditPayload(decision, normalization), decidedAt));
+                auditPayload(decision, normalization, precheckResults), decidedAt));
 
         outboxRepository.save(OutboxEvent.newEvent(
                 decision.getId(), AGGREGATE_TYPE, decisionCreatedTopic, serializeDecisionCreated(decision)));
@@ -94,7 +97,8 @@ public class DecisionPersistenceService {
         return decision.getId();
     }
 
-    private Map<String, Object> auditPayload(ScreeningDecisionEntity decision, NormalizationResult normalization) {
+    private Map<String, Object> auditPayload(ScreeningDecisionEntity decision, NormalizationResult normalization,
+                                              List<PrecheckResult> precheckResults) {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("score", decision.getScore());
         payload.put("decision", decision.getDecision().name());
@@ -103,6 +107,7 @@ public class DecisionPersistenceService {
         if (normalization.hasUnmapped()) {
             payload.put("unmappedCriteria", normalization.unmapped());
         }
+        payload.put("checks", precheckResults);
         return payload;
     }
 

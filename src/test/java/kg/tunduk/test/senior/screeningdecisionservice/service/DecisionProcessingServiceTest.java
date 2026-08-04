@@ -6,6 +6,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import kg.tunduk.test.senior.screeningdecisionservice.dto.kafka.CvParsedEvent;
 import kg.tunduk.test.senior.screeningdecisionservice.exception.NonRetryableEventException;
 import kg.tunduk.test.senior.screeningdecisionservice.model.RuleSetEntity;
+import kg.tunduk.test.senior.screeningdecisionservice.precheck.PrecheckOrchestrator;
 import kg.tunduk.test.senior.screeningdecisionservice.repository.RuleSetRepository;
 import kg.tunduk.test.senior.screeningdecisionservice.scoring.CriterionWeight;
 import kg.tunduk.test.senior.screeningdecisionservice.scoring.ScoreOutcome;
@@ -51,6 +52,9 @@ class DecisionProcessingServiceTest {
     @Mock
     private DecisionPersistenceService decisionPersistenceService;
 
+    @Mock
+    private PrecheckOrchestrator precheckOrchestrator;
+
     private CvParsedJsonSchemaValidator schemaValidator;
     private CriteriaCatalog criteriaCatalog;
     private String validSampleJson;
@@ -73,7 +77,7 @@ class DecisionProcessingServiceTest {
 
     private DecisionProcessingService service(UnknownKeyPolicy policy) {
         return new DecisionProcessingService(schemaValidator, criteriaCatalog, ruleSetRepository,
-                decisionPersistenceService, MAPPER, policy);
+                precheckOrchestrator, decisionPersistenceService, MAPPER, policy);
     }
 
     private RuleSetEntity javaSeniorRuleSet() {
@@ -95,7 +99,7 @@ class DecisionProcessingServiceTest {
                 .isInstanceOf(NonRetryableEventException.class)
                 .satisfies(ex -> assertThat(((NonRetryableEventException) ex).getErrorCode()).isEqualTo("MALFORMED_JSON"));
 
-        verify(decisionPersistenceService, never()).persist(any(), any(), any(), anyString(), any());
+        verify(decisionPersistenceService, never()).persist(any(), any(), any(), anyString(), any(), any());
     }
 
     @Test
@@ -121,7 +125,7 @@ class DecisionProcessingServiceTest {
                     assertThat(nre.getErrorCode()).isEqualTo("SCHEMA_VALIDATION_ERROR");
                     assertThat(nre.getDetails()).anySatisfy(d -> assertThat(d.pointer()).isEqualTo("/criteria/0/key"));
                 });
-        verify(decisionPersistenceService, never()).persist(any(), any(), any(), anyString(), any());
+        verify(decisionPersistenceService, never()).persist(any(), any(), any(), anyString(), any(), any());
     }
 
     @Test
@@ -139,7 +143,7 @@ class DecisionProcessingServiceTest {
         assertThatThrownBy(() -> service.process(MAPPER.writeValueAsString(node)))
                 .isInstanceOf(NonRetryableEventException.class)
                 .satisfies(ex -> assertThat(((NonRetryableEventException) ex).getErrorCode()).isEqualTo("UNKNOWN_CRITERION_KEY"));
-        verify(decisionPersistenceService, never()).persist(any(), any(), any(), anyString(), any());
+        verify(decisionPersistenceService, never()).persist(any(), any(), any(), anyString(), any(), any());
     }
 
     @Test
@@ -154,13 +158,14 @@ class DecisionProcessingServiceTest {
 
         when(ruleSetRepository.findFirstByPositionAndActiveFromLessThanEqualOrderByActiveFromDesc(eq("java-senior"), any(Instant.class)))
                 .thenReturn(Optional.of(javaSeniorRuleSet()));
+        when(precheckOrchestrator.runAll(any())).thenReturn(List.of());
 
         DecisionProcessingService service = service(UnknownKeyPolicy.AUDIT);
         service.process(MAPPER.writeValueAsString(node));
 
         ArgumentCaptor<NormalizationResult> normalizationCaptor = ArgumentCaptor.forClass(NormalizationResult.class);
         verify(decisionPersistenceService).persist(any(CvParsedEvent.class), any(RuleSetEntity.class),
-                any(ScoreOutcome.class), anyString(), normalizationCaptor.capture());
+                any(ScoreOutcome.class), anyString(), normalizationCaptor.capture(), any());
         assertThat(normalizationCaptor.getValue().hasUnmapped()).isTrue();
     }
 
@@ -180,13 +185,14 @@ class DecisionProcessingServiceTest {
     void validEventIsPersistedAndSetsMdc() {
         when(ruleSetRepository.findFirstByPositionAndActiveFromLessThanEqualOrderByActiveFromDesc(eq("java-senior"), any(Instant.class)))
                 .thenReturn(Optional.of(javaSeniorRuleSet()));
+        when(precheckOrchestrator.runAll(any())).thenReturn(List.of());
 
         DecisionProcessingService service = service(UnknownKeyPolicy.AUDIT);
         service.process(validSampleJson);
 
         ArgumentCaptor<CvParsedEvent> eventCaptor = ArgumentCaptor.forClass(CvParsedEvent.class);
         verify(decisionPersistenceService).persist(eventCaptor.capture(), any(RuleSetEntity.class),
-                any(ScoreOutcome.class), eq(criteriaCatalog.version()), any(NormalizationResult.class));
+                any(ScoreOutcome.class), eq(criteriaCatalog.version()), any(NormalizationResult.class), any());
         assertThat(eventCaptor.getValue().candidateId()).isEqualTo("senior-asanov-bakyt");
         assertThat(MDC.get("candidateId")).isEqualTo("senior-asanov-bakyt");
         assertThat(MDC.get("eventId")).isEqualTo("660e8400-e29b-41d4-a716-446655440000");
@@ -196,7 +202,8 @@ class DecisionProcessingServiceTest {
     void duplicateEventDoesNotPropagateException() {
         when(ruleSetRepository.findFirstByPositionAndActiveFromLessThanEqualOrderByActiveFromDesc(eq("java-senior"), any(Instant.class)))
                 .thenReturn(Optional.of(javaSeniorRuleSet()));
-        when(decisionPersistenceService.persist(any(), any(), any(), anyString(), any()))
+        when(precheckOrchestrator.runAll(any())).thenReturn(List.of());
+        when(decisionPersistenceService.persist(any(), any(), any(), anyString(), any(), any()))
                 .thenThrow(new DataIntegrityViolationException("duplicate key value violates unique constraint"));
 
         DecisionProcessingService service = service(UnknownKeyPolicy.AUDIT);
