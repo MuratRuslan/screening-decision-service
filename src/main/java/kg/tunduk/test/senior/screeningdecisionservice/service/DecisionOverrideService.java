@@ -11,6 +11,8 @@ import kg.tunduk.test.senior.screeningdecisionservice.model.ScreeningDecisionEnt
 import kg.tunduk.test.senior.screeningdecisionservice.repository.DecisionAuditRepository;
 import kg.tunduk.test.senior.screeningdecisionservice.repository.ScreeningDecisionRepository;
 import kg.tunduk.test.senior.screeningdecisionservice.scoring.Decision;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +33,8 @@ import java.util.UUID;
  */
 @Service
 public class DecisionOverrideService {
+
+    private static final Logger log = LoggerFactory.getLogger(DecisionOverrideService.class);
 
     /** Auth is explicitly out of scope for this task; this documents that instead of guessing an identity. */
     private static final String ACTOR = "api-client";
@@ -57,6 +61,9 @@ public class DecisionOverrideService {
 
         auditRepository.save(new DecisionAuditEntity(UUID.randomUUID(), decision.getId(), AuditAction.OVERRIDDEN, ACTOR,
                 overridePayload(previousDecision, request, expectedVersion), Instant.now()));
+
+        log.info("Decision manually overridden decisionId={} candidateId={} previousDecision={} newDecision={} actor={}",
+                decision.getId(), decision.getCandidateId(), previousDecision, request.decision(), ACTOR);
 
         return DecisionMapper.toResponse(decision);
     }
