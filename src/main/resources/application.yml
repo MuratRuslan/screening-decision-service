@@ -1,1 +1,82 @@
-spring.application.name=Screening decision service
+spring:
+  application:
+    name: screening-decision-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/screening_decision
+    username: screening
+    password: screening
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: screening-decision-service
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      properties:
+        enable.idempotence: true
+        acks: all
+    listener:
+      ack-mode: record
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus,info
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs
+
+app:
+  kafka:
+    topics:
+      cv-parsed: cv.parsed
+      decision-created: screening.decision.created
+      decision-dlq: screening.decision.dlq
+    consumer:
+      retry:
+        initial-interval-ms: 500
+        multiplier: 2.0
+        max-interval-ms: 5000
+        max-elapsed-time-ms: 30000
+  outbox:
+    poll-interval-ms: 1000
+    batch-size: 50
+    send-timeout-ms: 5000
+  precheck:
+    max-concurrent-calls: 8
+    timeout-ms: 2000
+  semantic:
+    unknown-key-policy: AUDIT
+
+logging:
+  pattern:
+    level: "%5p [candidateId=%X{candidateId} eventId=%X{eventId}]"
