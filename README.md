@@ -78,14 +78,33 @@ Hibernate) и для чистой логики `ScoreCalculator`; сгенери
 ## Запуск локально
 
 ```bash
-docker compose up -d          # Postgres 16 + Kafka из одного узла (KRaft, порт 9092)
+docker compose up -d          # Postgres 16 + Kafka (KRaft) + kafka-init + kafka-ui + otel-collector
 ./gradlew bootRun             # применяет миграции Flyway при старте
 ```
+
+`docker compose up -d` поднимает не только Postgres и Kafka, но и вспомогательные сервисы для
+разработки:
+
+- **kafka-init** — одноразовый сервис, создающий топики контракта (`cv.parsed`,
+  `screening.decision.created`, `screening.decision.dlq`) явно через `kafka-topics.sh --create`
+  и завершающийся; авто-создание топиков на брокере отключено
+  (`KAFKA_AUTO_CREATE_TOPICS_ENABLE=false`), поэтому к моменту старта приложения топики уже
+  существуют.
+- **kafka-ui** (`provectuslabs/kafka-ui`) — веб-UI для просмотра топиков/партиций/сообщений:
+  `http://localhost:8090`.
+- **otel-collector** (`otel/opentelemetry-collector`) — принимает трейсы по OTLP
+  (`localhost:4317`/`4318`, конфиг в `otel-collector-config.yaml`) и пишет их в свой stdout
+  (`docker compose logs -f otel-collector`) — см. [§ Трассировка OpenTelemetry](#трассировка-opentelemetry).
+
+Kafka теперь слушает на двух listener'ах: `PLAINTEXT` (`localhost:9092`) — для приложения,
+запущенного на хосте через `./gradlew bootRun`, и `INTERNAL` (`kafka:29092`) — для контейнеров
+внутри той же docker-сети (kafka-ui, otel-collector), обращающихся к брокеру по имени сервиса.
 
 - Swagger UI: `http://localhost:8080/swagger-ui.html`
 - OpenAPI JSON: `http://localhost:8080/v3/api-docs`
 - Health: `http://localhost:8080/actuator/health`
 - Prometheus: `http://localhost:8080/actuator/prometheus`
+- Kafka UI: `http://localhost:8090`
 
 ```bash
 ./gradlew build     # компиляция + полный набор тестов
@@ -128,7 +147,10 @@ JSON Schema (пустое `name`, некорректный `email` — отпр�
 > 3. Сервис Kafka в `docker-compose.yml` использовал конфигурацию с двумя listener'ами, которую
 >    официальный образ `apache/kafka` отклонял при старте (`advertised.listeners` в итоге
 >    содержал немаршрутизируемый `0.0.0.0`); заменено на более простую схему с одним listener'ом
->    в стиле KRaft из официального quickstart-примера compose для Kafka.
+>    в стиле KRaft из официального quickstart-примера compose для Kafka. (Позже, при добавлении
+>    kafka-ui и otel-collector как контейнеров, снова понадобился второй listener — на этот раз
+>    с явным `advertised.listeners` на каждый из них (`localhost:9092` для хоста,
+>    `kafka:29092` для docker-сети), что и отличает эту схему от изначально сломанной.)
 
 `kafka-console-producer.sh`/`.bat` тоже подходят — но учтите, что он отправляет каждую **строку**
 stdin как отдельное сообщение, поэтому многострочный отформатированный JSON нужно сначала
@@ -280,15 +302,21 @@ Observation API Spring. `observability.Spans` — небольшой null-safe �
 трассирует всё для масштаба данной демонстрации (в реальном деплое это стоило бы уменьшить или
 перейти на tail-based сэмплирование).
 
-Бэкенд для трассировки не поставляется в комплекте — TASK.md явно исключает требование полного
-сервера распределённой трассировки. `management.otlp.tracing.endpoint` указывает на стандартный
-порт OTLP/HTTP (`http://localhost:4318/v1/traces`); если там никто не слушает, пакетный
-процессор спанов OTel SDK просто логирует предупреждения о неудачном экспорте в фоне и никогда не
-блокирует обработку запросов/сообщений консьюмером. Направьте его на любой OTLP-совместимый
-коллектор (Jaeger, Grafana Tempo, OTel Collector), чтобы реально увидеть трейсы, например,
+`docker compose up -d` поднимает `otel-collector` (`otel/opentelemetry-collector`,
+конфиг — `otel-collector-config.yaml`), который принимает трейсы по OTLP на
+`management.otlp.tracing.endpoint` (`http://localhost:4318/v1/traces`) и пишет их в свой
+stdout (`docker compose logs -f otel-collector`) через `debug`-exporter — этого достаточно,
+чтобы убедиться, что спаны реально доходят, без визуального UI для трассировки. Полноценный
+бэкенд с UI (Jaeger, Grafana Tempo) не поставляется в комплекте — TASK.md явно исключает
+требование полного сервера распределённой трассировки — но подключить его несложно: добавьте
+нужный exporter в `otel-collector-config.yaml` и укажите его в `service.pipelines.traces.exporters`
+(коллектор уже принимает и обрабатывает трейсы, остаётся только направить их дальше), например
 запустите Jaeger локально с помощью
-`docker run -d -p 16686:16686 -p 4318:4318 jaegertracing/all-in-one:latest` и откройте
-`http://localhost:16686`.
+`docker run -d -p 16686:16686 -p 4317:4317 jaegertracing/all-in-one:latest`, добавьте в конфиг
+exporter `otlp: {endpoint: host.docker.internal:4317, tls: {insecure: true}}` и откройте
+`http://localhost:16686`. Если коллектор недоступен (например, `docker compose` не запущен),
+пакетный процессор спанов OTel SDK просто логирует предупреждения о неудачном экспорте в фоне и
+никогда не блокирует обработку запросов/сообщений консьюмером.
 
 ## Зафиксированные неоднозначности контракта
 
