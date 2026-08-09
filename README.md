@@ -3,7 +3,7 @@
 Микросервис на Kafka, который потребляет события распарсенных резюме (`cv.parsed`),
 оценивает кандидата по активному набору правил для его позиции, сохраняет решение и
 публикует результат (`screening.decision.created`) через транзакционный outbox. Предоставляет
-REST API для наборов правил, решений и ручного переопределения.
+REST API для наборов правил, решений и ручного переопределения. Решение выполнено при помощи Claude code.
 
 ```
 cv-parser  →  [Kafka: cv.parsed]  →  screening-decision-service  →  [Kafka: screening.decision.created]  →  candidate-service
@@ -12,23 +12,13 @@ cv-parser  →  [Kafka: cv.parsed]  →  screening-decision-service  →  [Kafka
 ```
 
 Реализовано для тестового задания `java-senior` из [`java-senior/TASK.md`](java-senior/TASK.md).
-Эта папка (контракт OpenAPI/JSON Schema/XSD, семантический каталог, примеры событий) — это
-фиксированный, авторитетный контракт, который **не изменяется** данной реализацией — приложение
-копирует эти файлы в `src/main/resources` во время сборки и загружает их из classpath, поэтому
-собранный jar самодостаточен. `ContractResourcesConsistencyTest` роняет сборку, если копии
-когда-либо расходятся с оригиналами.
 
 ## Стек
 
 Java 21 (виртуальные потоки), Spring Boot 3.5.3 (Web, Data JPA, Validation, Kafka, Actuator),
 PostgreSQL, Apache Kafka, Flyway, Gradle, JUnit 5 + Mockito, Testcontainers, springdoc
 OpenAPI, Micrometer/Prometheus, `com.networknt:json-schema-validator`. Без SOAP-фреймворка
-и без JAXB — см. [§ SOAP/XML-адаптер](#soapxml-адаптер-для-образования).
-
-`ext['testcontainers.version'] = '2.0.5'` в `build.gradle` фиксирует версию Testcontainers
-явно: управляемый BOM Spring Boot иначе разрешил бы более старую ветку 1.x, несовместимую с
-пакетами `org.testcontainers.kafka.KafkaContainer` / `org.testcontainers.postgresql.PostgreSQLContainer`,
-которые использует `TestcontainersConfiguration`.
+и без JAXB.
 
 ## Генерация кода по контракту (contract-first)
 
@@ -53,11 +43,6 @@ DTO для REST и Kafka генерируются во время сборки, 
   `cv.parsed` (`CvParsedEvent`, с вложенными типами `Criterium`/`Experience`/`Verdict`/`Result`)
   в `build/generated/jsonschema2pojo/.../generated.kafka`, настроенный с `dateTimeType =
   java.time.Instant`, чтобы поля даты-времени не требовали конвертации в `OffsetDateTime`.
-
-Оба генератора указывают напрямую на `java-senior/contract/` (никогда на runtime-копии в
-`src/main/resources`), поэтому регенерация после изменения контракта происходит автоматически
-при следующей сборке — без ручной синхронизации и без возможности расхождения сгенерированных
-типов с фиксированным контрактом.
 
 **Типы домена/персистентности намеренно остаются написанными вручную и отделены от
 сгенерированных типов REST/Kafka.** `scoring.CriterionWeight`, `scoring.RuleEvaluation`,
@@ -360,21 +345,6 @@ exporter `otlp: {endpoint: host.docker.internal:4317, tls: {insecure: true}}` и
 пакетный процессор спанов OTel SDK просто логирует предупреждения о неудачном экспорте в фоне и
 никогда не блокирует обработку запросов/сообщений консьюмером.
 
-## Зафиксированные неоднозначности контракта
-
-- `AuditAction.UPDATED_BY_REPLAY` присутствует в перечислении контракта OpenAPI, но ничто в
-  требованиях TASK.md на данный момент его не производит. Он замаплен для полноты схемы, но
-  никогда не эмитится — зарезервирован для гипотетического будущего admin-эндпоинта
-  "пересчитать".
-- "Последнее решение" для `GET /decisions/by-candidate/{candidateId}` определяется как
-  `ORDER BY decided_at DESC LIMIT 1`. Несколько решений на одного кандидата — это легитимная
-  ситуация (разные повторные скрининги с разным `parsedAt` разделяют `candidateId`, но не пару
-  `(candidateId, parsedAt)`), поэтому "последнее" определяется временем решения, а не
-  уникальностью кандидата.
-- Версия семантического каталога сохраняется в решении (колонка `semantic_catalog_version`) и в
-  payload аудита `CREATED`, но намеренно **не** добавлена в `DecisionResponse` JSON — список
-  полей ответа в контракте фиксирован, и TASK.md говорит не добавлять поля.
-
 ## Тестирование
 
 Unit-тесты (JUnit 5 + Mockito + AssertJ, без Spring-контекста, кроме отмеченных случаев)
@@ -396,8 +366,7 @@ TASK.md — актуальный список см. в этом пакете. Д
 
 ## Что не сделано / известные ограничения
 
-- Отсутствует скрипт нагрузочного тестирования на k6 (указан как бонусный пункт; пропущен ради
-  экономии времени).
+- Отсутствует скрипт load тестирования на k6 (указан как бонусный пункт; пропущен с отсутвием опыта и времени).
 - Отсутствует настройка `@EntityGraph`/явных графов выборки — граф сущностей здесь достаточно
   неглубокий (нет коллекционных ассоциаций между тремя основными сущностями), чтобы проблема N+1
   представляла реальный риск в текущем наборе запросов.
