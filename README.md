@@ -258,6 +258,33 @@ the way a real remote call would be. `SoapEducationAdapter` validates both the o
 request and the inbound response against the XSD and never throws past its own boundary —
 every failure becomes a result the precheck orchestrator can report.
 
+### OpenTelemetry tracing
+
+Distributed tracing is wired via Micrometer Tracing's OTel bridge
+(`micrometer-tracing-bridge-otel` + `opentelemetry-exporter-otlp`), not a hand-rolled
+integration: Spring MVC request handling and, via
+`spring.kafka.listener.observation-enabled` / `spring.kafka.template.observation-enabled`,
+every `@KafkaListener` invocation and `KafkaTemplate.send()` automatically become spans
+through Spring's Observation API. `observability.Spans` is a small null-safe helper that
+tags whichever span is currently active with business attributes the auto-instrumentation
+doesn't know about — `candidateId`, `eventId`, `position`, `decisionId`, `decision` in
+`DecisionProcessingService`, `decisionId` in `DecisionOverrideService`, and `kafka.topic`/
+`kafka.key` in `DecisionEventProducer` — so a trace for one `cv.parsed` event is
+searchable by the same fields already used in structured logs. The log pattern also
+includes `traceId`/`spanId` (`%X{traceId:-}`/`%X{spanId:-}`) so log lines and traces
+correlate even without a UI, and `management.tracing.sampling.probability=1.0` traces
+everything for this demo scope (a real deployment would tune this down or move to
+tail-based sampling).
+
+No tracing backend is bundled — TASK.md explicitly excludes requiring a full distributed-
+tracing server. `management.otlp.tracing.endpoint` points at the standard OTLP/HTTP port
+(`http://localhost:4318/v1/traces`); with nothing listening there, the OTel SDK's batch
+span processor just logs failed-export warnings in the background and never blocks
+request/consumer processing. Point it at any OTLP-compatible collector (Jaeger, Grafana
+Tempo, an OTel Collector) to actually view traces, e.g. run Jaeger locally with
+`docker run -d -p 16686:16686 -p 4318:4318 jaegertracing/all-in-one:latest` and browse
+`http://localhost:16686`.
+
 ## Contract ambiguities recorded
 
 - `AuditAction.UPDATED_BY_REPLAY` exists in the OpenAPI contract's enum but nothing in
@@ -295,7 +322,6 @@ the verification note above.
 ## What wasn't done / known limitations
 
 - No k6 load-testing script (listed as a bonus item; skipped for time).
-- No OpenTelemetry trace/span attributes (bonus item; skipped for time).
 - No `@EntityGraph`/explicit fetch-graph tuning — the entity graph here is shallow enough
   (no collection associations between the three main entities) that N+1 isn't a real risk
   in the current query set.

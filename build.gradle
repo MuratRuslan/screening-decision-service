@@ -49,6 +49,11 @@ dependencies {
     // JsonNullable<T> fields (tri-state absent/null/present for optional+nullable
     // contract properties, e.g. ErrorResponse.details, DecisionResponse.overrideReason).
     implementation 'org.openapitools:jackson-databind-nullable:0.2.6'
+    // OpenTelemetry tracing: Micrometer Tracing's Observation API (already instrumenting
+    // Spring MVC and, once enabled below, Spring Kafka) is bridged to the OTel SDK, which
+    // exports finished spans via OTLP. Versions are managed by Spring Boot's BOM.
+    implementation 'io.micrometer:micrometer-tracing-bridge-otel'
+    implementation 'io.opentelemetry:opentelemetry-exporter-otlp'
     compileOnly 'org.projectlombok:lombok'
     runtimeOnly 'io.micrometer:micrometer-registry-prometheus'
     runtimeOnly 'org.postgresql:postgresql'

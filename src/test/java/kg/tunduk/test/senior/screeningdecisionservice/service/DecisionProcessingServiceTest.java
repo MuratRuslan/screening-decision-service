@@ -3,6 +3,7 @@ package kg.tunduk.test.senior.screeningdecisionservice.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import io.micrometer.tracing.Tracer;
 import kg.tunduk.test.senior.screeningdecisionservice.generated.kafka.CvParsedEvent;
 import kg.tunduk.test.senior.screeningdecisionservice.exception.NonRetryableEventException;
 import kg.tunduk.test.senior.screeningdecisionservice.model.RuleSetEntity;
@@ -55,6 +56,9 @@ class DecisionProcessingServiceTest {
     @Mock
     private PrecheckOrchestrator precheckOrchestrator;
 
+    @Mock
+    private Tracer tracer;
+
     private CvParsedJsonSchemaValidator schemaValidator;
     private CriteriaCatalog criteriaCatalog;
     private String validSampleJson;
@@ -77,7 +81,7 @@ class DecisionProcessingServiceTest {
 
     private DecisionProcessingService service(UnknownKeyPolicy policy) {
         return new DecisionProcessingService(schemaValidator, criteriaCatalog, ruleSetRepository,
-                precheckOrchestrator, decisionPersistenceService, MAPPER, policy);
+                precheckOrchestrator, decisionPersistenceService, MAPPER, policy, tracer);
     }
 
     private RuleSetEntity javaSeniorRuleSet() {

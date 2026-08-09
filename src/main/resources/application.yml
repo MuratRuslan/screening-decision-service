@@ -36,6 +36,13 @@ spring:
         acks: all
     listener:
       ack-mode: record
+      # Micrometer Observation instrumentation for @KafkaListener invocations - this is
+      # what makes consumed messages show up as spans at all.
+      observation-enabled: true
+    # Micrometer Observation instrumentation for KafkaTemplate.send() - matching span
+    # instrumentation on the producer side.
+    template:
+      observation-enabled: true
 
 management:
   endpoints:
@@ -48,6 +55,20 @@ management:
   metrics:
     tags:
       application: ${spring.application.name}
+  tracing:
+    sampling:
+      # 100% for this task/demo so every request and Kafka message is traced; a real
+      # production deployment would tune this down (head-based sampling) or switch to
+      # tail-based sampling at the collector.
+      probability: 1.0
+  otlp:
+    tracing:
+      # Standard OTLP/HTTP port. No collector is bundled (TASK.md explicitly does not
+      # require a full tracing backend) - point this at any OTLP-compatible collector
+      # (Jaeger, Tempo, an OTel Collector) to view traces; with nothing listening here,
+      # the OTel SDK's batch span processor just logs failed-export warnings in the
+      # background and never blocks request/consumer processing.
+      endpoint: http://localhost:4318/v1/traces
 
 springdoc:
   swagger-ui:
@@ -79,4 +100,4 @@ app:
 
 logging:
   pattern:
-    level: "%5p [candidateId=%X{candidateId} eventId=%X{eventId}]"
+    level: "%5p [candidateId=%X{candidateId} eventId=%X{eventId} traceId=%X{traceId:-} spanId=%X{spanId:-}]"

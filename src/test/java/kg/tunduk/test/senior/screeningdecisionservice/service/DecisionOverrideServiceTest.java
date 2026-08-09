@@ -1,5 +1,6 @@
 package kg.tunduk.test.senior.screeningdecisionservice.service;
 
+import io.micrometer.tracing.Tracer;
 import kg.tunduk.test.senior.screeningdecisionservice.generated.rest.model.Decision;
 import kg.tunduk.test.senior.screeningdecisionservice.generated.rest.model.DecisionOverrideRequest;
 import kg.tunduk.test.senior.screeningdecisionservice.generated.rest.model.DecisionResponse;
@@ -36,8 +37,11 @@ class DecisionOverrideServiceTest {
     @Mock
     private DecisionAuditRepository auditRepository;
 
+    @Mock
+    private Tracer tracer;
+
     private DecisionOverrideService service() {
-        return new DecisionOverrideService(decisionRepository, auditRepository);
+        return new DecisionOverrideService(decisionRepository, auditRepository, tracer);
     }
 
     /** ScreeningDecisionEntity initializes {@code version = 1} for a never-yet-overridden decision. */

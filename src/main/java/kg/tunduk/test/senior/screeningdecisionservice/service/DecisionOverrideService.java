@@ -1,5 +1,6 @@
 package kg.tunduk.test.senior.screeningdecisionservice.service;
 
+import io.micrometer.tracing.Tracer;
 import kg.tunduk.test.senior.screeningdecisionservice.generated.rest.model.DecisionOverrideRequest;
 import kg.tunduk.test.senior.screeningdecisionservice.generated.rest.model.DecisionResponse;
 import kg.tunduk.test.senior.screeningdecisionservice.exception.NotFoundException;
@@ -8,6 +9,7 @@ import kg.tunduk.test.senior.screeningdecisionservice.mapper.DecisionMapper;
 import kg.tunduk.test.senior.screeningdecisionservice.model.AuditAction;
 import kg.tunduk.test.senior.screeningdecisionservice.model.DecisionAuditEntity;
 import kg.tunduk.test.senior.screeningdecisionservice.model.ScreeningDecisionEntity;
+import kg.tunduk.test.senior.screeningdecisionservice.observability.Spans;
 import kg.tunduk.test.senior.screeningdecisionservice.repository.DecisionAuditRepository;
 import kg.tunduk.test.senior.screeningdecisionservice.repository.ScreeningDecisionRepository;
 import kg.tunduk.test.senior.screeningdecisionservice.scoring.Decision;
@@ -41,14 +43,18 @@ public class DecisionOverrideService {
 
     private final ScreeningDecisionRepository decisionRepository;
     private final DecisionAuditRepository auditRepository;
+    private final Tracer tracer;
 
-    public DecisionOverrideService(ScreeningDecisionRepository decisionRepository, DecisionAuditRepository auditRepository) {
+    public DecisionOverrideService(ScreeningDecisionRepository decisionRepository, DecisionAuditRepository auditRepository,
+                                    Tracer tracer) {
         this.decisionRepository = decisionRepository;
         this.auditRepository = auditRepository;
+        this.tracer = tracer;
     }
 
     @Transactional
     public DecisionResponse override(UUID id, int expectedVersion, DecisionOverrideRequest request) {
+        Spans.tag(tracer, "decisionId", String.valueOf(id));
         ScreeningDecisionEntity decision = decisionRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Решение " + id + " не найдено"));
 

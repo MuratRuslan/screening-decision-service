@@ -3,10 +3,12 @@ package kg.tunduk.test.senior.screeningdecisionservice.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.tracing.Tracer;
 import kg.tunduk.test.senior.screeningdecisionservice.generated.kafka.CvParsedEvent;
 import kg.tunduk.test.senior.screeningdecisionservice.generated.rest.model.ErrorResponseDetailsInner;
 import kg.tunduk.test.senior.screeningdecisionservice.exception.NonRetryableEventException;
 import kg.tunduk.test.senior.screeningdecisionservice.model.RuleSetEntity;
+import kg.tunduk.test.senior.screeningdecisionservice.observability.Spans;
 import kg.tunduk.test.senior.screeningdecisionservice.precheck.PrecheckOrchestrator;
 import kg.tunduk.test.senior.screeningdecisionservice.precheck.PrecheckResult;
 import kg.tunduk.test.senior.screeningdecisionservice.repository.RuleSetRepository;
@@ -28,6 +30,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Orchestrates the full cv.parsed -> decision pipeline: JSON Schema validation, semantic
@@ -48,6 +51,7 @@ public class DecisionProcessingService {
     private final DecisionPersistenceService decisionPersistenceService;
     private final ObjectMapper objectMapper;
     private final UnknownKeyPolicy unknownKeyPolicy;
+    private final Tracer tracer;
 
     public DecisionProcessingService(CvParsedJsonSchemaValidator schemaValidator,
                                       CriteriaCatalog criteriaCatalog,
@@ -55,7 +59,8 @@ public class DecisionProcessingService {
                                       PrecheckOrchestrator precheckOrchestrator,
                                       DecisionPersistenceService decisionPersistenceService,
                                       ObjectMapper objectMapper,
-                                      @Value("${app.semantic.unknown-key-policy:AUDIT}") UnknownKeyPolicy unknownKeyPolicy) {
+                                      @Value("${app.semantic.unknown-key-policy:AUDIT}") UnknownKeyPolicy unknownKeyPolicy,
+                                      Tracer tracer) {
         this.schemaValidator = schemaValidator;
         this.criteriaCatalog = criteriaCatalog;
         this.ruleSetRepository = ruleSetRepository;
@@ -63,6 +68,7 @@ public class DecisionProcessingService {
         this.decisionPersistenceService = decisionPersistenceService;
         this.objectMapper = objectMapper;
         this.unknownKeyPolicy = unknownKeyPolicy;
+        this.tracer = tracer;
     }
 
     /**
@@ -92,6 +98,9 @@ public class DecisionProcessingService {
     public void process(CvParsedEvent event) {
         MDC.put("eventId", String.valueOf(event.getEventId()));
         MDC.put("candidateId", event.getCandidateId());
+        Spans.tag(tracer, "candidateId", event.getCandidateId());
+        Spans.tag(tracer, "eventId", String.valueOf(event.getEventId()));
+        Spans.tag(tracer, "position", event.getPosition());
         log.info("Consumed cv.parsed event candidateId={} position={} parsedAt={}",
                 event.getCandidateId(), event.getPosition(), event.getParsedAt());
 
@@ -115,8 +124,10 @@ public class DecisionProcessingService {
                 event.getCandidateId(), r.name(), r.status(), r.durationMs(), r.detail()));
 
         try {
-            decisionPersistenceService.persist(event, ruleSetEntity, outcome, criteriaCatalog.version(),
-                    normalization, precheckResults);
+            UUID decisionId = decisionPersistenceService.persist(event, ruleSetEntity, outcome,
+                    criteriaCatalog.version(), normalization, precheckResults);
+            Spans.tag(tracer, "decisionId", String.valueOf(decisionId));
+            Spans.tag(tracer, "decision", outcome.decision().name());
             log.info("Decision created candidateId={} decision={} score={} ruleSetVersion={}",
                     event.getCandidateId(), outcome.decision(), outcome.score(), ruleSetEntity.getVersion());
         } catch (DataIntegrityViolationException e) {

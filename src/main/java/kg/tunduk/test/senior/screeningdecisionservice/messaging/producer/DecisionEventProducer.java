@@ -1,5 +1,7 @@
 package kg.tunduk.test.senior.screeningdecisionservice.messaging.producer;
 
+import io.micrometer.tracing.Tracer;
+import kg.tunduk.test.senior.screeningdecisionservice.observability.Spans;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
@@ -17,13 +19,17 @@ import java.util.concurrent.TimeoutException;
 public class DecisionEventProducer {
 
     private final KafkaTemplate<String, String> kafkaTemplate;
+    private final Tracer tracer;
 
-    public DecisionEventProducer(KafkaTemplate<String, String> kafkaTemplate) {
+    public DecisionEventProducer(KafkaTemplate<String, String> kafkaTemplate, Tracer tracer) {
         this.kafkaTemplate = kafkaTemplate;
+        this.tracer = tracer;
     }
 
     /** Sends synchronously, blocking up to {@code timeoutMs} for the broker ack. */
     public void send(String topic, String key, String payload, long timeoutMs) {
+        Spans.tag(tracer, "kafka.topic", topic);
+        Spans.tag(tracer, "kafka.key", key);
         try {
             kafkaTemplate.send(topic, key, payload).get(timeoutMs, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
