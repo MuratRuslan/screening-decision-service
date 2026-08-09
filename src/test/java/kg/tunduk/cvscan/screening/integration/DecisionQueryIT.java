@@ -30,17 +30,17 @@ class DecisionQueryIT {
 
     @Test
     void filtersByPositionAndDecisionAndSortsByScoreDescending() {
-        String url = UriComponentsBuilder.fromPath("/api/v1/decisions")
+        final String url = UriComponentsBuilder.fromPath("/api/v1/decisions")
                 .queryParam("position", "java-senior")
                 .queryParam("decision", "AUTO_APPROVE")
                 .queryParam("sort", "score,desc")
                 .queryParam("size", "50")
                 .toUriString();
 
-        ResponseEntity<DecisionPage> response = restTemplate.getForEntity(url, DecisionPage.class);
+        final ResponseEntity<DecisionPage> response = restTemplate.getForEntity(url, DecisionPage.class);
 
         assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
-        DecisionPage page = response.getBody();
+        final DecisionPage page = response.getBody();
         assertThat(page).isNotNull();
         assertThat(page.getContent()).isNotEmpty();
         assertThat(page.getContent()).allSatisfy(d -> {
@@ -54,13 +54,13 @@ class DecisionQueryIT {
 
     @Test
     void filtersByMinScore() {
-        String url = UriComponentsBuilder.fromPath("/api/v1/decisions")
+        final String url = UriComponentsBuilder.fromPath("/api/v1/decisions")
                 .queryParam("position", "java-senior")
                 .queryParam("minScore", "90")
                 .queryParam("size", "50")
                 .toUriString();
 
-        DecisionPage page = restTemplate.getForEntity(url, DecisionPage.class).getBody();
+        final DecisionPage page = restTemplate.getForEntity(url, DecisionPage.class).getBody();
 
         assertThat(page).isNotNull();
         assertThat(page.getContent()).isNotEmpty();
@@ -69,11 +69,11 @@ class DecisionQueryIT {
 
     @Test
     void searchMatchesCandidateIdSubstring() {
-        String url = UriComponentsBuilder.fromPath("/api/v1/decisions")
+        final String url = UriComponentsBuilder.fromPath("/api/v1/decisions")
                 .queryParam("search", "asanov-bakyt")
                 .toUriString();
 
-        DecisionPage page = restTemplate.getForEntity(url, DecisionPage.class).getBody();
+        final DecisionPage page = restTemplate.getForEntity(url, DecisionPage.class).getBody();
 
         assertThat(page).isNotNull();
         assertThat(page.getContent()).isNotEmpty();
@@ -82,13 +82,13 @@ class DecisionQueryIT {
 
     @Test
     void paginationHonorsRequestedPageSize() {
-        String url = UriComponentsBuilder.fromPath("/api/v1/decisions")
+        final String url = UriComponentsBuilder.fromPath("/api/v1/decisions")
                 .queryParam("position", "java-senior")
                 .queryParam("size", "2")
                 .queryParam("page", "0")
                 .toUriString();
 
-        DecisionPage page = restTemplate.getForEntity(url, DecisionPage.class).getBody();
+        final DecisionPage page = restTemplate.getForEntity(url, DecisionPage.class).getBody();
 
         assertThat(page).isNotNull();
         assertThat(page.getContent()).hasSizeLessThanOrEqualTo(2);
@@ -98,11 +98,11 @@ class DecisionQueryIT {
 
     @Test
     void rejectsUnsupportedSortField() {
-        String url = UriComponentsBuilder.fromPath("/api/v1/decisions")
+        final String url = UriComponentsBuilder.fromPath("/api/v1/decisions")
                 .queryParam("sort", "email,asc")
                 .toUriString();
 
-        ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
+        final ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
 
         assertThat(response.getStatusCode().value()).isEqualTo(400);
     }

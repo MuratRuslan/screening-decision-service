@@ -30,27 +30,27 @@ public class DlqPublishingRecoverer implements ConsumerRecordRecoverer {
     private final ObjectMapper objectMapper;
     private final String dlqTopic;
 
-    public DlqPublishingRecoverer(KafkaTemplate<String, String> kafkaTemplate, ObjectMapper objectMapper, String dlqTopic) {
+    public DlqPublishingRecoverer(final KafkaTemplate<String, String> kafkaTemplate, final ObjectMapper objectMapper, final String dlqTopic) {
         this.kafkaTemplate = kafkaTemplate;
         this.objectMapper = objectMapper;
         this.dlqTopic = dlqTopic;
     }
 
     @Override
-    public void accept(ConsumerRecord<?, ?> record, Exception exception) {
-        Optional<NonRetryableEventException> nonRetryable = findNonRetryable(exception);
-        String errorCode = nonRetryable.map(NonRetryableEventException::getErrorCode).orElse("PROCESSING_ERROR");
-        String errorMessage = nonRetryable.map(Throwable::getMessage).orElseGet(() -> rootMessage(exception));
-        List<ErrorResponseDetailsInner> details = nonRetryable.map(NonRetryableEventException::getDetails).orElse(List.of());
+    public void accept(final ConsumerRecord<?, ?> record, final Exception exception) {
+        final Optional<NonRetryableEventException> nonRetryable = findNonRetryable(exception);
+        final String errorCode = nonRetryable.map(NonRetryableEventException::getErrorCode).orElse("PROCESSING_ERROR");
+        final String errorMessage = nonRetryable.map(Throwable::getMessage).orElseGet(() -> rootMessage(exception));
+        final List<ErrorResponseDetailsInner> details = nonRetryable.map(NonRetryableEventException::getDetails).orElse(List.of());
 
-        String rawValue = record.value() == null ? null : record.value().toString();
-        Object originalPayload = tryParseJson(rawValue);
+        final String rawValue = record.value() == null ? null : record.value().toString();
+        final Object originalPayload = tryParseJson(rawValue);
 
-        DlqEvent dlqEvent = new DlqEvent(originalPayload, errorCode, errorMessage, details, Instant.now(),
+        final DlqEvent dlqEvent = new DlqEvent(originalPayload, errorCode, errorMessage, details, Instant.now(),
                 record.topic(), record.partition(), record.offset());
 
         try {
-            String key = record.key() == null ? null : record.key().toString();
+            final String key = record.key() == null ? null : record.key().toString();
             kafkaTemplate.send(dlqTopic, key, objectMapper.writeValueAsString(dlqEvent));
             log.warn("Published to DLQ topic={} errorCode={} sourceTopic={} partition={} offset={}",
                     dlqTopic, errorCode, record.topic(), record.partition(), record.offset());
@@ -60,7 +60,7 @@ public class DlqPublishingRecoverer implements ConsumerRecordRecoverer {
         }
     }
 
-    private Optional<NonRetryableEventException> findNonRetryable(Throwable throwable) {
+    private Optional<NonRetryableEventException> findNonRetryable(final Throwable throwable) {
         Throwable current = throwable;
         while (current != null) {
             if (current instanceof NonRetryableEventException nre) {
@@ -71,7 +71,7 @@ public class DlqPublishingRecoverer implements ConsumerRecordRecoverer {
         return Optional.empty();
     }
 
-    private String rootMessage(Throwable throwable) {
+    private String rootMessage(final Throwable throwable) {
         Throwable current = throwable;
         while (current.getCause() != null) {
             current = current.getCause();
@@ -79,7 +79,7 @@ public class DlqPublishingRecoverer implements ConsumerRecordRecoverer {
         return current.getMessage() != null ? current.getMessage() : current.getClass().getSimpleName();
     }
 
-    private Object tryParseJson(String raw) {
+    private Object tryParseJson(final String raw) {
         if (raw == null) {
             return null;
         }

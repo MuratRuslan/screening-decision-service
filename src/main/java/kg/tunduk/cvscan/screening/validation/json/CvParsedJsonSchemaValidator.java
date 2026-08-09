@@ -22,20 +22,20 @@ public class CvParsedJsonSchemaValidator {
 
     private final JsonSchema schema;
 
-    public CvParsedJsonSchemaValidator(JsonSchema schema) {
+    public CvParsedJsonSchemaValidator(final JsonSchema schema) {
         this.schema = schema;
     }
 
-    public static JsonSchema loadSchema(InputStream in) {
-        SchemaValidatorsConfig config = SchemaValidatorsConfig.builder()
+    public static JsonSchema loadSchema(final InputStream in) {
+        final SchemaValidatorsConfig config = SchemaValidatorsConfig.builder()
                 .pathType(PathType.JSON_POINTER)
                 .build();
-        JsonSchemaFactory factory = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V202012);
+        final JsonSchemaFactory factory = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V202012);
         return factory.getSchema(in, config);
     }
 
-    public List<JsonPointerError> validate(JsonNode node) {
-        Set<ValidationMessage> messages = schema.validate(node);
+    public List<JsonPointerError> validate(final JsonNode node) {
+        final Set<ValidationMessage> messages = schema.validate(node);
         return messages.stream()
                 .map(m -> new JsonPointerError(m.getInstanceLocation().toString(), m.getMessage()))
                 .toList();

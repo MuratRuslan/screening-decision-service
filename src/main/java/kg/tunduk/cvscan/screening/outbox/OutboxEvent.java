@@ -52,9 +52,9 @@ public class OutboxEvent {
         // JPA
     }
 
-    public static OutboxEvent newEvent(UUID aggregateId, String aggregateType, String topic, String payload) {
-        Instant now = Instant.now();
-        OutboxEvent event = new OutboxEvent();
+    public static OutboxEvent newEvent(final UUID aggregateId, final String aggregateType, final String topic, final String payload) {
+        final Instant now = Instant.now();
+        final OutboxEvent event = new OutboxEvent();
         event.id = UUID.randomUUID();
         event.aggregateType = aggregateType;
         event.aggregateId = aggregateId;
@@ -117,7 +117,7 @@ public class OutboxEvent {
         this.updatedAt = this.sentAt;
     }
 
-    public void markFailedAttempt(String error) {
+    public void markFailedAttempt(final String error) {
         this.retryCount++;
         this.lastError = error;
         this.updatedAt = Instant.now();

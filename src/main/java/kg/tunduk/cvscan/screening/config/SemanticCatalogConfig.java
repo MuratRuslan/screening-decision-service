@@ -13,7 +13,7 @@ public class SemanticCatalogConfig {
 
     @Bean
     public CriteriaCatalog criteriaCatalog() throws IOException {
-        try (InputStream in = new ClassPathResource("semantic/criteria-catalog.json").getInputStream()) {
+        try (final InputStream in = new ClassPathResource("semantic/criteria-catalog.json").getInputStream()) {
             return CriteriaCatalog.parse(in);
         }
     }

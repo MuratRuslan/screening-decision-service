@@ -15,11 +15,11 @@ public final class Spans {
     private Spans() {
     }
 
-    public static void tag(Tracer tracer, String key, String value) {
+    public static void tag(final Tracer tracer, final String key, final String value) {
         if (tracer == null || value == null) {
             return;
         }
-        Span span = tracer.currentSpan();
+        final Span span = tracer.currentSpan();
         if (span != null) {
             span.tag(key, value);
         }

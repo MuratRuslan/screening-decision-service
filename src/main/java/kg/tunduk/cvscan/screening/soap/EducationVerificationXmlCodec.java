@@ -23,10 +23,10 @@ public class EducationVerificationXmlCodec {
 
     private static final String NS = "http://cv-scan.local/education-verification";
 
-    public String marshalRequest(VerifyEducationRequest request) {
+    public String marshalRequest(final VerifyEducationRequest request) {
         try {
-            Document doc = newDocument();
-            Element root = element(doc, "VerifyEducationRequest");
+            final Document doc = newDocument();
+            final Element root = element(doc, "VerifyEducationRequest");
             doc.appendChild(root);
             root.appendChild(textElement(doc, "candidateId", request.candidateId()));
             root.appendChild(textElement(doc, "fullName", request.fullName()));
@@ -37,15 +37,15 @@ public class EducationVerificationXmlCodec {
         }
     }
 
-    public VerifyEducationRequest unmarshalRequest(String xml) {
-        Element root = parse(xml);
+    public VerifyEducationRequest unmarshalRequest(final String xml) {
+        final Element root = parse(xml);
         return new VerifyEducationRequest(text(root, "candidateId"), text(root, "fullName"), text(root, "educationText"));
     }
 
-    public String marshalResponse(VerifyEducationResponse response) {
+    public String marshalResponse(final VerifyEducationResponse response) {
         try {
-            Document doc = newDocument();
-            Element root = element(doc, "VerifyEducationResponse");
+            final Document doc = newDocument();
+            final Element root = element(doc, "VerifyEducationResponse");
             doc.appendChild(root);
             root.appendChild(textElement(doc, "candidateId", response.candidateId()));
             root.appendChild(textElement(doc, "result", response.result().name()));
@@ -58,56 +58,56 @@ public class EducationVerificationXmlCodec {
         }
     }
 
-    public VerifyEducationResponse unmarshalResponse(String xml) {
-        Element root = parse(xml);
-        String message = hasChild(root, "message") ? text(root, "message") : null;
+    public VerifyEducationResponse unmarshalResponse(final String xml) {
+        final Element root = parse(xml);
+        final String message = hasChild(root, "message") ? text(root, "message") : null;
         return new VerifyEducationResponse(text(root, "candidateId"),
                 EducationVerificationResult.valueOf(text(root, "result")), message);
     }
 
     private Document newDocument() throws Exception {
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         factory.setNamespaceAware(true);
-        DocumentBuilder builder = factory.newDocumentBuilder();
+        final DocumentBuilder builder = factory.newDocumentBuilder();
         return builder.newDocument();
     }
 
-    private Element element(Document doc, String localName) {
+    private Element element(final Document doc, final String localName) {
         return doc.createElementNS(NS, localName);
     }
 
-    private Element textElement(Document doc, String localName, String value) {
-        Element el = element(doc, localName);
+    private Element textElement(final Document doc, final String localName, final String value) {
+        final Element el = element(doc, localName);
         el.setTextContent(value == null ? "" : value);
         return el;
     }
 
-    private String serialize(Document doc) throws Exception {
-        Transformer transformer = TransformerFactory.newInstance().newTransformer();
+    private String serialize(final Document doc) throws Exception {
+        final Transformer transformer = TransformerFactory.newInstance().newTransformer();
         transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
-        StringWriter writer = new StringWriter();
+        final StringWriter writer = new StringWriter();
         transformer.transform(new DOMSource(doc), new StreamResult(writer));
         return writer.toString();
     }
 
-    private Element parse(String xml) {
+    private Element parse(final String xml) {
         try {
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             factory.setNamespaceAware(true);
-            DocumentBuilder builder = factory.newDocumentBuilder();
-            Document doc = builder.parse(new InputSource(new StringReader(xml)));
+            final DocumentBuilder builder = factory.newDocumentBuilder();
+            final Document doc = builder.parse(new InputSource(new StringReader(xml)));
             return doc.getDocumentElement();
         } catch (Exception e) {
             throw new XmlCodecException("Failed to parse XML", e);
         }
     }
 
-    private String text(Element root, String localName) {
-        NodeList nodes = root.getElementsByTagNameNS(NS, localName);
+    private String text(final Element root, final String localName) {
+        final NodeList nodes = root.getElementsByTagNameNS(NS, localName);
         return nodes.getLength() == 0 ? null : nodes.item(0).getTextContent();
     }
 
-    private boolean hasChild(Element root, String localName) {
+    private boolean hasChild(final Element root, final String localName) {
         return root.getElementsByTagNameNS(NS, localName).getLength() > 0;
     }
 }

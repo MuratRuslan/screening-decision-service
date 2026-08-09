@@ -12,7 +12,7 @@ public class CvParsedListener {
 
     private final DecisionProcessingService decisionProcessingService;
 
-    public CvParsedListener(DecisionProcessingService decisionProcessingService) {
+    public CvParsedListener(final DecisionProcessingService decisionProcessingService) {
         this.decisionProcessingService = decisionProcessingService;
     }
 
@@ -22,10 +22,10 @@ public class CvParsedListener {
      * передаёт типизированный, уже провалидированный {@link CvParsedEvent} в бизнес-пайплайн.
      */
     @KafkaListener(topics = "${app.kafka.topics.cv-parsed}", groupId = "${spring.kafka.consumer.group-id}")
-    public void onMessage(ConsumerRecord<String, String> record) {
+    public void onMessage(final ConsumerRecord<String, String> record) {
         try {
             MDC.put("candidateId", record.key());
-            CvParsedEvent event = decisionProcessingService.parseAndValidate(record.value());
+            final CvParsedEvent event = decisionProcessingService.parseAndValidate(record.value());
             decisionProcessingService.process(event);
         } finally {
             MDC.clear();

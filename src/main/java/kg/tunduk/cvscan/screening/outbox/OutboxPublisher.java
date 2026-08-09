@@ -36,10 +36,10 @@ public class OutboxPublisher {
     private final int batchSize;
     private final long sendTimeoutMs;
 
-    public OutboxPublisher(OutboxRepository outboxRepository,
-                            DecisionEventProducer decisionEventProducer,
-                            @Value("${app.outbox.batch-size}") int batchSize,
-                            @Value("${app.outbox.send-timeout-ms}") long sendTimeoutMs) {
+    public OutboxPublisher(final OutboxRepository outboxRepository,
+                            final DecisionEventProducer decisionEventProducer,
+                            @Value("${app.outbox.batch-size}") final int batchSize,
+                            @Value("${app.outbox.send-timeout-ms}") final long sendTimeoutMs) {
         this.outboxRepository = outboxRepository;
         this.decisionEventProducer = decisionEventProducer;
         this.batchSize = batchSize;
@@ -49,12 +49,12 @@ public class OutboxPublisher {
     @Scheduled(fixedDelayString = "${app.outbox.poll-interval-ms}")
     @Transactional
     public void publishBatch() {
-        List<OutboxEvent> batch = outboxRepository.claimBatch(batchSize);
+        final List<OutboxEvent> batch = outboxRepository.claimBatch(batchSize);
         if (batch.isEmpty()) {
             return;
         }
 
-        for (OutboxEvent event : batch) {
+        for (final OutboxEvent event : batch) {
             try {
                 decisionEventProducer.send(event.getTopic(), event.getAggregateId().toString(), event.getPayload(), sendTimeoutMs);
                 event.markSent();

@@ -21,13 +21,13 @@ public class DecisionEventProducer {
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final Tracer tracer;
 
-    public DecisionEventProducer(KafkaTemplate<String, String> kafkaTemplate, Tracer tracer) {
+    public DecisionEventProducer(final KafkaTemplate<String, String> kafkaTemplate, final Tracer tracer) {
         this.kafkaTemplate = kafkaTemplate;
         this.tracer = tracer;
     }
 
     /** Отправляет синхронно, блокируясь до {@code timeoutMs} в ожидании подтверждения от брокера. */
-    public void send(String topic, String key, String payload, long timeoutMs) {
+    public void send(final String topic, final String key, final String payload, final long timeoutMs) {
         Spans.tag(tracer, "kafka.topic", topic);
         Spans.tag(tracer, "kafka.key", key);
         try {

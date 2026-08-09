@@ -23,8 +23,8 @@ public class GlobalExceptionHandler {
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException ex, HttpServletRequest request) {
-        List<ErrorResponseDetailsInner> details = ex.getBindingResult().getFieldErrors().stream()
+    public ResponseEntity<ErrorResponse> handleValidation(final MethodArgumentNotValidException ex, final HttpServletRequest request) {
+        final List<ErrorResponseDetailsInner> details = ex.getBindingResult().getFieldErrors().stream()
                 .map(fe -> new ErrorResponseDetailsInner()
                         .field(fe.getField())
                         .message(fe.getDefaultMessage())
@@ -34,10 +34,10 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
-    public ResponseEntity<ErrorResponse> handleConstraintViolation(ConstraintViolationException ex, HttpServletRequest request) {
-        List<ErrorResponseDetailsInner> details = ex.getConstraintViolations().stream()
+    public ResponseEntity<ErrorResponse> handleConstraintViolation(final ConstraintViolationException ex, final HttpServletRequest request) {
+        final List<ErrorResponseDetailsInner> details = ex.getConstraintViolations().stream()
                 .map(v -> {
-                    String field = v.getPropertyPath().toString();
+                    final String field = v.getPropertyPath().toString();
                     return new ErrorResponseDetailsInner()
                             .field(field)
                             .message(v.getMessage())
@@ -48,54 +48,54 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(BadRequestException.class)
-    public ResponseEntity<ErrorResponse> handleBadRequest(BadRequestException ex, HttpServletRequest request) {
+    public ResponseEntity<ErrorResponse> handleBadRequest(final BadRequestException ex, final HttpServletRequest request) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
                 errorResponse(400, "VALIDATION_ERROR", ex.getMessage(), request));
     }
 
     @ExceptionHandler(RequestValidationException.class)
-    public ResponseEntity<ErrorResponse> handleRequestValidation(RequestValidationException ex, HttpServletRequest request) {
+    public ResponseEntity<ErrorResponse> handleRequestValidation(final RequestValidationException ex, final HttpServletRequest request) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
                 errorResponse(400, "VALIDATION_ERROR", ex.getMessage(), request).details(ex.getDetails()));
     }
 
     @ExceptionHandler(NotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleNotFound(NotFoundException ex, HttpServletRequest request) {
+    public ResponseEntity<ErrorResponse> handleNotFound(final NotFoundException ex, final HttpServletRequest request) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
                 errorResponse(404, "RESOURCE_NOT_FOUND", ex.getMessage(), request));
     }
 
     @ExceptionHandler(DuplicateRuleSetException.class)
-    public ResponseEntity<ErrorResponse> handleDuplicateRuleSet(DuplicateRuleSetException ex, HttpServletRequest request) {
+    public ResponseEntity<ErrorResponse> handleDuplicateRuleSet(final DuplicateRuleSetException ex, final HttpServletRequest request) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(
                 errorResponse(409, "DUPLICATE_RULE_SET", ex.getMessage(), request));
     }
 
     @ExceptionHandler(VersionConflictException.class)
-    public ResponseEntity<ErrorResponse> handleVersionConflict(VersionConflictException ex, HttpServletRequest request) {
+    public ResponseEntity<ErrorResponse> handleVersionConflict(final VersionConflictException ex, final HttpServletRequest request) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(
                 errorResponse(409, "VERSION_CONFLICT", ex.getMessage(), request));
     }
 
     @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
-    public ResponseEntity<ErrorResponse> handleOptimisticLocking(ObjectOptimisticLockingFailureException ex, HttpServletRequest request) {
+    public ResponseEntity<ErrorResponse> handleOptimisticLocking(final ObjectOptimisticLockingFailureException ex, final HttpServletRequest request) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(
                 errorResponse(409, "VERSION_CONFLICT", "Конкурентное изменение решения, повторите запрос", request));
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleUnexpected(Exception ex, HttpServletRequest request) {
+    public ResponseEntity<ErrorResponse> handleUnexpected(final Exception ex, final HttpServletRequest request) {
         log.error("Unhandled exception while processing {} {}", request.getMethod(), request.getRequestURI(), ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
                 errorResponse(500, "INTERNAL_ERROR", "Внутренняя ошибка сервиса", request));
     }
 
-    private ResponseEntity<ErrorResponse> badRequest(HttpServletRequest request, List<ErrorResponseDetailsInner> details) {
+    private ResponseEntity<ErrorResponse> badRequest(final HttpServletRequest request, final List<ErrorResponseDetailsInner> details) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
                 errorResponse(400, "VALIDATION_ERROR", "Ошибка валидации входных данных", request).details(details));
     }
 
-    private ErrorResponse errorResponse(int status, String error, String message, HttpServletRequest request) {
+    private ErrorResponse errorResponse(final int status, final String error, final String message, final HttpServletRequest request) {
         return new ErrorResponse(status, error, message, OffsetDateTime.now(ZoneOffset.UTC), request.getRequestURI());
     }
 }

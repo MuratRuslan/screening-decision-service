@@ -20,21 +20,21 @@ final class KafkaTestSupport {
     private KafkaTestSupport() {
     }
 
-    static String uniqueCandidateId(String prefix) {
+    static String uniqueCandidateId(final String prefix) {
         return prefix + "-" + UUID.randomUUID();
     }
 
     /** Загружает java-senior/test-events/cv-parsed-sample.json и переписывает идентифицирующие поля. */
-    static String sampleEventJson(String candidateId, Instant parsedAt) throws Exception {
-        String raw = Files.readString(Path.of("java-senior/test-events/cv-parsed-sample.json"));
-        ObjectNode node = (ObjectNode) MAPPER.readTree(raw);
+    static String sampleEventJson(final String candidateId, final Instant parsedAt) throws Exception {
+        final String raw = Files.readString(Path.of("java-senior/test-events/cv-parsed-sample.json"));
+        final ObjectNode node = (ObjectNode) MAPPER.readTree(raw);
         node.put("eventId", UUID.randomUUID().toString());
         node.put("candidateId", candidateId);
         node.put("parsedAt", parsedAt.toString());
         return MAPPER.writeValueAsString(node);
     }
 
-    static JsonNode readJson(String json) throws Exception {
+    static JsonNode readJson(final String json) throws Exception {
         return MAPPER.readTree(json);
     }
 
@@ -49,15 +49,15 @@ final class KafkaTestSupport {
      * полностью обходит эту проблему, так как это та же фабрика, которой успешно пользуется
      * остальное приложение.
      */
-    static Consumer<String, String> createConsumer(ConsumerFactory<String, String> consumerFactory, String topic) {
-        Consumer<String, String> consumer = consumerFactory.createConsumer("it-consumer-" + UUID.randomUUID(), null);
+    static Consumer<String, String> createConsumer(final ConsumerFactory<String, String> consumerFactory, final String topic) {
+        final Consumer<String, String> consumer = consumerFactory.createConsumer("it-consumer-" + UUID.randomUUID(), null);
         consumer.subscribe(List.of(topic));
         return consumer;
     }
 
     /** Опрашивает, пока {@code condition} не пройдёт или не истечёт {@code timeoutMs}, иначе падает с последней AssertionError. */
-    static void awaitUntil(long timeoutMs, Runnable assertion) throws InterruptedException {
-        long deadline = System.currentTimeMillis() + timeoutMs;
+    static void awaitUntil(final long timeoutMs, final Runnable assertion) throws InterruptedException {
+        final long deadline = System.currentTimeMillis() + timeoutMs;
         AssertionError lastFailure = null;
         while (System.currentTimeMillis() < deadline) {
             try {

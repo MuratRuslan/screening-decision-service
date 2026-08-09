@@ -52,14 +52,14 @@ public class DecisionProcessingService {
     private final UnknownKeyPolicy unknownKeyPolicy;
     private final Tracer tracer;
 
-    public DecisionProcessingService(CvParsedJsonSchemaValidator schemaValidator,
-                                      CriteriaCatalog criteriaCatalog,
-                                      RuleSetRepository ruleSetRepository,
-                                      PrecheckOrchestrator precheckOrchestrator,
-                                      DecisionPersistenceService decisionPersistenceService,
-                                      ObjectMapper objectMapper,
-                                      @Value("${app.semantic.unknown-key-policy:AUDIT}") UnknownKeyPolicy unknownKeyPolicy,
-                                      Tracer tracer) {
+    public DecisionProcessingService(final CvParsedJsonSchemaValidator schemaValidator,
+                                      final CriteriaCatalog criteriaCatalog,
+                                      final RuleSetRepository ruleSetRepository,
+                                      final PrecheckOrchestrator precheckOrchestrator,
+                                      final DecisionPersistenceService decisionPersistenceService,
+                                      final ObjectMapper objectMapper,
+                                      @Value("${app.semantic.unknown-key-policy:AUDIT}") final UnknownKeyPolicy unknownKeyPolicy,
+                                      final Tracer tracer) {
         this.schemaValidator = schemaValidator;
         this.criteriaCatalog = criteriaCatalog;
         this.ruleSetRepository = ruleSetRepository;
@@ -76,7 +76,7 @@ public class DecisionProcessingService {
      * вместо этого вызывает {@link #parseAndValidate} и {@link #process(CvParsedEvent)}
      * отдельно, чтобы залогировать/проверить типизированное событие перед обработкой.
      */
-    public void process(String rawPayload) {
+    public void process(final String rawPayload) {
         process(parseAndValidate(rawPayload));
     }
 
@@ -88,13 +88,13 @@ public class DecisionProcessingService {
      * ловил бы только структурные ошибки JSON, а не нарушения контракта вроде неверного
      * формата email или ключа критерия не по шаблону.
      */
-    public CvParsedEvent parseAndValidate(String rawPayload) {
-        JsonNode node = parseJson(rawPayload);
+    public CvParsedEvent parseAndValidate(final String rawPayload) {
+        final JsonNode node = parseJson(rawPayload);
         validateAgainstSchema(node);
         return databind(node);
     }
 
-    public void process(CvParsedEvent event) {
+    public void process(final CvParsedEvent event) {
         MDC.put("eventId", String.valueOf(event.getEventId()));
         MDC.put("candidateId", event.getCandidateId());
         Spans.tag(tracer, "candidateId", event.getCandidateId());
@@ -103,27 +103,27 @@ public class DecisionProcessingService {
         log.info("Consumed cv.parsed event candidateId={} position={} parsedAt={}",
                 event.getCandidateId(), event.getPosition(), event.getParsedAt());
 
-        NormalizationResult normalization = SemanticNormalizer.normalize(criteriaCatalog, event.getCriteria());
+        final NormalizationResult normalization = SemanticNormalizer.normalize(criteriaCatalog, event.getCriteria());
         if (normalization.hasUnmapped() && unknownKeyPolicy == UnknownKeyPolicy.DLQ) {
             throw new NonRetryableEventException("UNKNOWN_CRITERION_KEY",
                     "Неизвестные ключи критериев: " + normalization.unmapped());
         }
 
-        RuleSetEntity ruleSetEntity = ruleSetRepository
+        final RuleSetEntity ruleSetEntity = ruleSetRepository
                 .findFirstByPositionAndActiveFromLessThanEqualOrderByActiveFromDesc(event.getPosition(), Instant.now())
                 .orElseThrow(() -> new NonRetryableEventException("RULE_SET_NOT_FOUND",
                         "Активный rule-set для позиции '" + event.getPosition() + "' не найден"));
 
-        RuleSet ruleSet = toDomain(ruleSetEntity);
-        ScoreOutcome outcome = ScoreCalculator.calculate(ruleSet, normalization.byCanonicalKey());
+        final RuleSet ruleSet = toDomain(ruleSetEntity);
+        final ScoreOutcome outcome = ScoreCalculator.calculate(ruleSet, normalization.byCanonicalKey());
 
-        List<PrecheckResult> precheckResults = precheckOrchestrator.runAll(event);
+        final List<PrecheckResult> precheckResults = precheckOrchestrator.runAll(event);
         precheckResults.forEach(r -> log.info(
                 "Precheck completed candidateId={} check={} status={} durationMs={} detail={}",
                 event.getCandidateId(), r.name(), r.status(), r.durationMs(), r.detail()));
 
         try {
-            UUID decisionId = decisionPersistenceService.persist(event, ruleSetEntity, outcome,
+            final UUID decisionId = decisionPersistenceService.persist(event, ruleSetEntity, outcome,
                     criteriaCatalog.version(), normalization, precheckResults);
             Spans.tag(tracer, "decisionId", String.valueOf(decisionId));
             Spans.tag(tracer, "decision", outcome.decision().name());
@@ -134,7 +134,7 @@ public class DecisionProcessingService {
         }
     }
 
-    private JsonNode parseJson(String rawPayload) {
+    private JsonNode parseJson(final String rawPayload) {
         if (rawPayload == null || rawPayload.isBlank()) {
             throw new NonRetryableEventException("MALFORMED_JSON", "Пустое сообщение");
         }
@@ -145,13 +145,13 @@ public class DecisionProcessingService {
         }
     }
 
-    private void validateAgainstSchema(JsonNode node) {
-        List<JsonPointerError> errors = schemaValidator.validate(node);
+    private void validateAgainstSchema(final JsonNode node) {
+        final List<JsonPointerError> errors = schemaValidator.validate(node);
         if (!errors.isEmpty()) {
-            List<ErrorResponseDetailsInner> details = errors.stream()
+            final List<ErrorResponseDetailsInner> details = errors.stream()
                     .map(e -> new ErrorResponseDetailsInner().message(e.message()).pointer(e.pointer()))
                     .toList();
-            String message = errors.stream()
+            final String message = errors.stream()
                     .map(e -> e.pointer() + ": " + e.message())
                     .reduce((a, b) -> a + "; " + b)
                     .orElse("Ошибка валидации JSON Schema");
@@ -159,7 +159,7 @@ public class DecisionProcessingService {
         }
     }
 
-    private CvParsedEvent databind(JsonNode node) {
+    private CvParsedEvent databind(final JsonNode node) {
         try {
             return objectMapper.treeToValue(node, CvParsedEvent.class);
         } catch (JsonProcessingException e) {
@@ -169,7 +169,7 @@ public class DecisionProcessingService {
         }
     }
 
-    private RuleSet toDomain(RuleSetEntity entity) {
+    private RuleSet toDomain(final RuleSetEntity entity) {
         return new RuleSet(entity.getPosition(), entity.getVersion(), entity.getActiveFrom(),
                 entity.getMinApproveScore(), entity.getMaxRejectScore(), entity.getWeights());
     }

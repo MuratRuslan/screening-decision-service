@@ -46,25 +46,25 @@ public class DecisionOverrideService {
     private final DecisionAuditRepository auditRepository;
     private final Tracer tracer;
 
-    public DecisionOverrideService(ScreeningDecisionRepository decisionRepository, DecisionAuditRepository auditRepository,
-                                    Tracer tracer) {
+    public DecisionOverrideService(final ScreeningDecisionRepository decisionRepository, final DecisionAuditRepository auditRepository,
+                                    final Tracer tracer) {
         this.decisionRepository = decisionRepository;
         this.auditRepository = auditRepository;
         this.tracer = tracer;
     }
 
     @Transactional
-    public DecisionResponse override(UUID id, int expectedVersion, DecisionOverrideRequest request) {
+    public DecisionResponse override(final UUID id, final int expectedVersion, final DecisionOverrideRequest request) {
         Spans.tag(tracer, "decisionId", String.valueOf(id));
-        ScreeningDecisionEntity decision = decisionRepository.findById(id)
+        final ScreeningDecisionEntity decision = decisionRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Решение " + id + " не найдено"));
 
         if (decision.getVersion() != expectedVersion) {
             throw VersionConflictException.expectedButActual(expectedVersion, decision.getVersion());
         }
 
-        Decision previousDecision = decision.getDecision();
-        Decision newDecision = Decision.valueOf(request.getDecision().name());
+        final Decision previousDecision = decision.getDecision();
+        final Decision newDecision = Decision.valueOf(request.getDecision().name());
         decision.applyOverride(newDecision, request.getReason());
 
         // Флашим сразу (не дожидаясь коммита), чтобы Hibernate выполнил UPDATE @Version и
@@ -82,8 +82,8 @@ public class DecisionOverrideService {
         return DecisionMapper.toResponse(decision);
     }
 
-    private Map<String, Object> overridePayload(Decision previousDecision, DecisionOverrideRequest request, int expectedVersion) {
-        Map<String, Object> payload = new LinkedHashMap<>();
+    private Map<String, Object> overridePayload(final Decision previousDecision, final DecisionOverrideRequest request, final int expectedVersion) {
+        final Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("previousDecision", previousDecision.name());
         payload.put("newDecision", request.getDecision().name());
         payload.put("expectedVersion", expectedVersion);

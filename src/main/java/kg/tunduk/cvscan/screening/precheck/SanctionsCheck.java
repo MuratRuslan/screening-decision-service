@@ -20,11 +20,11 @@ public class SanctionsCheck implements PrecheckCheck {
     }
 
     @Override
-    public PrecheckResult run(CvParsedEvent event) {
+    public PrecheckResult run(final CvParsedEvent event) {
         simulateLookupLatency();
 
-        String name = event.getName() == null ? "" : event.getName().toLowerCase(Locale.ROOT).trim();
-        boolean blocked = BLOCKLIST.stream().anyMatch(name::contains);
+        final String name = event.getName() == null ? "" : event.getName().toLowerCase(Locale.ROOT).trim();
+        final boolean blocked = BLOCKLIST.stream().anyMatch(name::contains);
         if (blocked) {
             return new PrecheckResult(name(), PrecheckStatus.FAILED, "Имя найдено в условном списке блокировок", 0);
         }

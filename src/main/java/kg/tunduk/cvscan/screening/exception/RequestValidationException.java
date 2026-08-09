@@ -9,7 +9,7 @@ public class RequestValidationException extends RuntimeException {
 
     private final List<ErrorResponseDetailsInner> details;
 
-    public RequestValidationException(String message, List<ErrorResponseDetailsInner> details) {
+    public RequestValidationException(final String message, final List<ErrorResponseDetailsInner> details) {
         super(message);
         this.details = details;
     }

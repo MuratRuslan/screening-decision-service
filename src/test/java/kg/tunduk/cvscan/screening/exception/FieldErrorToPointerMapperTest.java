@@ -13,7 +13,7 @@ class FieldErrorToPointerMapperTest {
             "weights[0].key, /weights/0/key",
             "weights[2].nested[1].value, /weights/2/nested/1/value"
     })
-    void convertsFieldPathToJsonPointer(String fieldPath, String expectedPointer) {
+    void convertsFieldPathToJsonPointer(final String fieldPath, final String expectedPointer) {
         assertThat(FieldErrorToPointerMapper.toPointer(fieldPath)).isEqualTo(expectedPointer);
     }
 }

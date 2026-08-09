@@ -41,8 +41,8 @@ public class DecisionAuditEntity {
         // JPA
     }
 
-    public DecisionAuditEntity(UUID id, UUID decisionId, AuditAction action, String actor,
-                                Map<String, Object> payload, Instant createdAt) {
+    public DecisionAuditEntity(final UUID id, final UUID decisionId, final AuditAction action, final String actor,
+                                final Map<String, Object> payload, final Instant createdAt) {
         this.id = id;
         this.decisionId = decisionId;
         this.action = action;

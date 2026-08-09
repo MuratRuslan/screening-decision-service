@@ -45,8 +45,8 @@ public class RuleSetEntity {
         // JPA
     }
 
-    public RuleSetEntity(UUID id, String position, String version, Instant activeFrom,
-                          int minApproveScore, int maxRejectScore, List<CriterionWeight> weights, Instant createdAt) {
+    public RuleSetEntity(final UUID id, final String position, final String version, final Instant activeFrom,
+                          final int minApproveScore, final int maxRejectScore, final List<CriterionWeight> weights, final Instant createdAt) {
         this.id = id;
         this.position = position;
         this.version = version;

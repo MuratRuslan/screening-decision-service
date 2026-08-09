@@ -25,31 +25,31 @@ public class RuleSetService {
     private final RuleSetRepository ruleSetRepository;
     private final CriteriaCatalog criteriaCatalog;
 
-    public RuleSetService(RuleSetRepository ruleSetRepository, CriteriaCatalog criteriaCatalog) {
+    public RuleSetService(final RuleSetRepository ruleSetRepository, final CriteriaCatalog criteriaCatalog) {
         this.ruleSetRepository = ruleSetRepository;
         this.criteriaCatalog = criteriaCatalog;
     }
 
-    public RuleSetResponse findActive(String position) {
-        RuleSetEntity entity = ruleSetRepository
+    public RuleSetResponse findActive(final String position) {
+        final RuleSetEntity entity = ruleSetRepository
                 .findFirstByPositionAndActiveFromLessThanEqualOrderByActiveFromDesc(position, Instant.now())
                 .orElseThrow(() -> new NotFoundException("Активный rule-set для позиции '" + position + "' не найден"));
         return RuleSetMapper.toResponse(entity);
     }
 
     @Transactional
-    public RuleSetResponse create(RuleSetRequest request) {
+    public RuleSetResponse create(final RuleSetRequest request) {
         if (ruleSetRepository.findByPositionAndVersion(request.getPosition(), request.getVersion()).isPresent()) {
             throw new DuplicateRuleSetException(
                     "Rule set " + request.getPosition() + "/" + request.getVersion() + " уже существует");
         }
         validateWeightsAgainstCatalog(request.getWeights());
 
-        List<kg.tunduk.cvscan.screening.scoring.CriterionWeight> weights = request.getWeights().stream()
+        final List<kg.tunduk.cvscan.screening.scoring.CriterionWeight> weights = request.getWeights().stream()
                 .map(w -> new kg.tunduk.cvscan.screening.scoring.CriterionWeight(w.getKey(), w.getWeight()))
                 .toList();
 
-        RuleSetEntity entity = new RuleSetEntity(UUID.randomUUID(), request.getPosition(), request.getVersion(),
+        final RuleSetEntity entity = new RuleSetEntity(UUID.randomUUID(), request.getPosition(), request.getVersion(),
                 request.getActiveFrom().toInstant(), request.getMinApproveScore(), request.getMaxRejectScore(),
                 weights, Instant.now());
 
@@ -58,10 +58,10 @@ public class RuleSetService {
     }
 
     /** Rule-set может ссылаться только на канонические id семантического каталога, не на алиасы. */
-    private void validateWeightsAgainstCatalog(List<CriterionWeight> weights) {
-        List<ErrorResponseDetailsInner> unknown = new ArrayList<>();
+    private void validateWeightsAgainstCatalog(final List<CriterionWeight> weights) {
+        final List<ErrorResponseDetailsInner> unknown = new ArrayList<>();
         for (int i = 0; i < weights.size(); i++) {
-            String key = weights.get(i).getKey();
+            final String key = weights.get(i).getKey();
             if (!criteriaCatalog.isCanonical(key)) {
                 unknown.add(new ErrorResponseDetailsInner()
                         .field("weights[" + i + "].key")

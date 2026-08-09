@@ -12,8 +12,8 @@ public final class RuleSetMapper {
     private RuleSetMapper() {
     }
 
-    public static RuleSetResponse toResponse(RuleSetEntity entity) {
-        List<CriterionWeight> weights = entity.getWeights().stream()
+    public static RuleSetResponse toResponse(final RuleSetEntity entity) {
+        final List<CriterionWeight> weights = entity.getWeights().stream()
                 .map(w -> new CriterionWeight(w.key(), w.weight()))
                 .toList();
 

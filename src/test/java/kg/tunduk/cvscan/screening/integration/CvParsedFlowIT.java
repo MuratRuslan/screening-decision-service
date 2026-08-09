@@ -52,34 +52,34 @@ class CvParsedFlowIT {
 
     @Test
     void validEventProducesDecisionAndPublishesDecisionCreated() throws Exception {
-        String candidateId = KafkaTestSupport.uniqueCandidateId("it-flow");
-        Instant parsedAt = Instant.now();
-        String json = KafkaTestSupport.sampleEventJson(candidateId, parsedAt);
+        final String candidateId = KafkaTestSupport.uniqueCandidateId("it-flow");
+        final Instant parsedAt = Instant.now();
+        final String json = KafkaTestSupport.sampleEventJson(candidateId, parsedAt);
 
         kafkaTemplate.send(cvParsedTopic, candidateId, json).get(10, java.util.concurrent.TimeUnit.SECONDS);
 
         KafkaTestSupport.awaitUntil(20_000, () ->
                 assertThat(decisionRepository.findFirstByCandidateIdOrderByDecidedAtDesc(candidateId)).isPresent());
 
-        ScreeningDecisionEntity decision = decisionRepository
+        final ScreeningDecisionEntity decision = decisionRepository
                 .findFirstByCandidateIdOrderByDecidedAtDesc(candidateId).orElseThrow();
         assertThat(decision.getDecision()).isIn(Decision.AUTO_APPROVE, Decision.NEEDS_REVIEW, Decision.AUTO_REJECT);
         assertThat(decision.getScore()).isBetween(0, 100);
 
         KafkaTestSupport.awaitUntil(20_000, () -> {
-            Optional<OutboxEvent> outbox = outboxRepository.findAll().stream()
+            final Optional<OutboxEvent> outbox = outboxRepository.findAll().stream()
                     .filter(e -> e.getAggregateId().equals(decision.getId()))
                     .findFirst();
             assertThat(outbox).isPresent();
             assertThat(outbox.get().getStatus()).isEqualTo(OutboxStatus.SENT);
         });
 
-        try (Consumer<String, String> consumer = KafkaTestSupport.createConsumer(consumerFactory, decisionCreatedTopic)) {
+        try (final Consumer<String, String> consumer = KafkaTestSupport.createConsumer(consumerFactory, decisionCreatedTopic)) {
             boolean found = false;
-            long deadline = System.currentTimeMillis() + 15_000;
+            final long deadline = System.currentTimeMillis() + 15_000;
             while (!found && System.currentTimeMillis() < deadline) {
-                ConsumerRecords<String, String> records = consumer.poll(Duration.ofSeconds(2));
-                for (var record : records) {
+                final ConsumerRecords<String, String> records = consumer.poll(Duration.ofSeconds(2));
+                for (final var record : records) {
                     if (record.value() != null && record.value().contains(candidateId)) {
                         found = true;
                         break;
@@ -92,9 +92,9 @@ class CvParsedFlowIT {
 
     @Test
     void duplicateEventDoesNotCreateASecondDecisionOrEvent() throws Exception {
-        String candidateId = KafkaTestSupport.uniqueCandidateId("it-dup");
-        Instant parsedAt = Instant.now();
-        String json = KafkaTestSupport.sampleEventJson(candidateId, parsedAt);
+        final String candidateId = KafkaTestSupport.uniqueCandidateId("it-dup");
+        final Instant parsedAt = Instant.now();
+        final String json = KafkaTestSupport.sampleEventJson(candidateId, parsedAt);
 
         kafkaTemplate.send(cvParsedTopic, candidateId, json).get(10, java.util.concurrent.TimeUnit.SECONDS);
         KafkaTestSupport.awaitUntil(20_000, () ->
@@ -105,7 +105,7 @@ class CvParsedFlowIT {
 
         // Даём дубликату шанс быть (ошибочно) обработанным, затем проверяем, что этого не случилось.
         Thread.sleep(5_000);
-        long count = decisionRepository.findAll().stream()
+        final long count = decisionRepository.findAll().stream()
                 .filter(d -> d.getCandidateId().equals(candidateId))
                 .count();
         assertThat(count).isEqualTo(1);

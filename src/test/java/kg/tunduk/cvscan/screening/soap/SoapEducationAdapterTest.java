@@ -14,19 +14,19 @@ class SoapEducationAdapterTest {
 
     @BeforeAll
     static void setUp() throws Exception {
-        EducationVerificationXmlCodec codec = new EducationVerificationXmlCodec();
-        EducationVerificationXsdValidator validator;
-        try (InputStream in = SoapEducationAdapterTest.class.getClassLoader()
+        final EducationVerificationXmlCodec codec = new EducationVerificationXmlCodec();
+        final EducationVerificationXsdValidator validator;
+        try (final InputStream in = SoapEducationAdapterTest.class.getClassLoader()
                 .getResourceAsStream("contract/soap/education-verification.xsd")) {
             validator = new EducationVerificationXsdValidator(EducationVerificationXsdValidator.loadSchema(in));
         }
-        EducationVerificationStub stub = new EducationVerificationStub(codec);
+        final EducationVerificationStub stub = new EducationVerificationStub(codec);
         adapter = new SoapEducationAdapter(codec, validator, stub);
     }
 
     @Test
     void wellFormedEducationWithYearIsVerified() {
-        EducationVerificationOutcome outcome = adapter.verify("senior-test", "Тест Тестов", "КГТУ им. Раззакова, ИТ, 2018");
+        final EducationVerificationOutcome outcome = adapter.verify("senior-test", "Тест Тестов", "КГТУ им. Раззакова, ИТ, 2018");
 
         assertThat(outcome.valid()).isTrue();
         assertThat(outcome.result()).isEqualTo(EducationVerificationResult.VERIFIED);
@@ -34,7 +34,7 @@ class SoapEducationAdapterTest {
 
     @Test
     void substantiveTextWithoutYearNeedsReview() {
-        EducationVerificationOutcome outcome = adapter.verify("senior-test", "Тест Тестов", "Какой-то университет без указания года");
+        final EducationVerificationOutcome outcome = adapter.verify("senior-test", "Тест Тестов", "Какой-то университет без указания года");
 
         assertThat(outcome.valid()).isTrue();
         assertThat(outcome.result()).isEqualTo(EducationVerificationResult.NEEDS_REVIEW);
@@ -42,7 +42,7 @@ class SoapEducationAdapterTest {
 
     @Test
     void blankEducationIsInvalidFormat() {
-        EducationVerificationOutcome outcome = adapter.verify("senior-test", "Тест Тестов", "");
+        final EducationVerificationOutcome outcome = adapter.verify("senior-test", "Тест Тестов", "");
 
         assertThat(outcome.valid()).isTrue();
         assertThat(outcome.result()).isEqualTo(EducationVerificationResult.INVALID_FORMAT);
@@ -50,7 +50,7 @@ class SoapEducationAdapterTest {
 
     @Test
     void nullEducationIsInvalidFormatRatherThanThrowing() {
-        EducationVerificationOutcome outcome = adapter.verify("senior-test", "Тест Тестов", null);
+        final EducationVerificationOutcome outcome = adapter.verify("senior-test", "Тест Тестов", null);
 
         assertThat(outcome.valid()).isTrue();
         assertThat(outcome.result()).isEqualTo(EducationVerificationResult.INVALID_FORMAT);

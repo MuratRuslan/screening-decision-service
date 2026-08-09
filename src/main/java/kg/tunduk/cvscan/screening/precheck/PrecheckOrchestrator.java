@@ -29,25 +29,25 @@ public class PrecheckOrchestrator {
     private final Semaphore semaphore;
     private final long timeoutMs;
 
-    public PrecheckOrchestrator(@Qualifier("precheckExecutor") ExecutorService precheckExecutor,
-                                 List<PrecheckCheck> checks,
-                                 @Value("${app.precheck.max-concurrent-calls}") int maxConcurrentCalls,
-                                 @Value("${app.precheck.timeout-ms}") long timeoutMs) {
+    public PrecheckOrchestrator(@Qualifier("precheckExecutor") final ExecutorService precheckExecutor,
+                                 final List<PrecheckCheck> checks,
+                                 @Value("${app.precheck.max-concurrent-calls}") final int maxConcurrentCalls,
+                                 @Value("${app.precheck.timeout-ms}") final long timeoutMs) {
         this.precheckExecutor = precheckExecutor;
         this.checks = checks;
         this.semaphore = new Semaphore(maxConcurrentCalls);
         this.timeoutMs = timeoutMs;
     }
 
-    public List<PrecheckResult> runAll(CvParsedEvent event) {
-        List<CompletableFuture<PrecheckResult>> futures = checks.stream()
+    public List<PrecheckResult> runAll(final CvParsedEvent event) {
+        final List<CompletableFuture<PrecheckResult>> futures = checks.stream()
                 .map(check -> runOne(check, event))
                 .toList();
 
         return futures.stream().map(CompletableFuture::join).toList();
     }
 
-    private CompletableFuture<PrecheckResult> runOne(PrecheckCheck check, CvParsedEvent event) {
+    private CompletableFuture<PrecheckResult> runOne(final PrecheckCheck check, final CvParsedEvent event) {
         return CompletableFuture
                 .supplyAsync(() -> executeBounded(check, event), precheckExecutor)
                 .orTimeout(timeoutMs, TimeUnit.MILLISECONDS)
@@ -55,8 +55,8 @@ public class PrecheckOrchestrator {
                         "Тайм-аут допроверки (" + timeoutMs + " ms)", timeoutMs));
     }
 
-    private PrecheckResult executeBounded(PrecheckCheck check, CvParsedEvent event) {
-        long start = System.nanoTime();
+    private PrecheckResult executeBounded(final PrecheckCheck check, final CvParsedEvent event) {
+        final long start = System.nanoTime();
         try {
             semaphore.acquire();
             try {
@@ -73,7 +73,7 @@ public class PrecheckOrchestrator {
         }
     }
 
-    private long elapsedMs(long startNanos) {
+    private long elapsedMs(final long startNanos) {
         return (System.nanoTime() - startNanos) / 1_000_000;
     }
 }

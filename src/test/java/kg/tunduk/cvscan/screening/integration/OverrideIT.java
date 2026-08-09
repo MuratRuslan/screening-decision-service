@@ -36,12 +36,12 @@ class OverrideIT {
 
     @Test
     void correctExpectedVersionAppliesOverrideAndRecordsAudit() {
-        HttpHeaders headers = new HttpHeaders();
+        final HttpHeaders headers = new HttpHeaders();
         headers.set("expectedVersion", "1");
-        DecisionOverrideRequest body = new DecisionOverrideRequest(Decision.AUTO_REJECT,
+        final DecisionOverrideRequest body = new DecisionOverrideRequest(Decision.AUTO_REJECT,
                 "Интеграционный тест: подтверждено ручное отклонение после интервью");
 
-        ResponseEntity<DecisionResponse> response = restTemplate.exchange(
+        final ResponseEntity<DecisionResponse> response = restTemplate.exchange(
                 "/api/v1/decisions/" + HAPPY_PATH_DECISION_ID + "/override",
                 HttpMethod.PATCH, new HttpEntity<>(body, headers), DecisionResponse.class);
 
@@ -51,7 +51,7 @@ class OverrideIT {
         assertThat(response.getBody().getOverridden()).isTrue();
         assertThat(response.getBody().getVersion()).isEqualTo(2);
 
-        ResponseEntity<AuditEntry[]> audit = restTemplate.getForEntity(
+        final ResponseEntity<AuditEntry[]> audit = restTemplate.getForEntity(
                 "/api/v1/decisions/" + HAPPY_PATH_DECISION_ID + "/audit", AuditEntry[].class);
         assertThat(audit.getBody()).isNotNull();
         assertThat(audit.getBody()).anySatisfy(a -> assertThat(a.getAction()).isEqualTo(AuditAction.OVERRIDDEN));
@@ -59,12 +59,12 @@ class OverrideIT {
 
     @Test
     void staleExpectedVersionReturnsVersionConflict() {
-        HttpHeaders headers = new HttpHeaders();
+        final HttpHeaders headers = new HttpHeaders();
         headers.set("expectedVersion", "999");
-        DecisionOverrideRequest body = new DecisionOverrideRequest(Decision.AUTO_APPROVE,
+        final DecisionOverrideRequest body = new DecisionOverrideRequest(Decision.AUTO_APPROVE,
                 "Интеграционный тест: заведомо устаревшая версия");
 
-        ResponseEntity<ErrorResponse> response = restTemplate.exchange(
+        final ResponseEntity<ErrorResponse> response = restTemplate.exchange(
                 "/api/v1/decisions/" + STALE_VERSION_DECISION_ID + "/override",
                 HttpMethod.PATCH, new HttpEntity<>(body, headers), ErrorResponse.class);
 

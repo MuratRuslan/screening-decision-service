@@ -82,10 +82,10 @@ public class ScreeningDecisionEntity {
         // JPA
     }
 
-    public ScreeningDecisionEntity(UUID id, String candidateId, Instant parsedAt, String name, String email,
-                                    String position, SourceVerdict sourceVerdict, Decision decision, int score,
-                                    String ruleSetVersion, List<RuleEvaluation> ruleResults,
-                                    String semanticCatalogVersion, Instant decidedAt) {
+    public ScreeningDecisionEntity(final UUID id, final String candidateId, final Instant parsedAt, final String name, final String email,
+                                    final String position, final SourceVerdict sourceVerdict, final Decision decision, final int score,
+                                    final String ruleSetVersion, final List<RuleEvaluation> ruleResults,
+                                    final String semanticCatalogVersion, final Instant decidedAt) {
         this.id = id;
         this.candidateId = candidateId;
         this.parsedAt = parsedAt;
@@ -170,7 +170,7 @@ public class ScreeningDecisionEntity {
         return overrideReason;
     }
 
-    public void applyOverride(Decision newDecision, String reason) {
+    public void applyOverride(final Decision newDecision, final String reason) {
         this.decision = newDecision;
         this.overridden = true;
         this.overrideReason = reason;

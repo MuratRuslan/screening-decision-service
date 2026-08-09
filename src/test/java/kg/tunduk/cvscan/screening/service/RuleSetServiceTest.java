@@ -40,7 +40,7 @@ class RuleSetServiceTest {
 
     @BeforeAll
     static void loadCatalog() throws Exception {
-        try (InputStream in = RuleSetServiceTest.class.getClassLoader()
+        try (final InputStream in = RuleSetServiceTest.class.getClassLoader()
                 .getResourceAsStream("semantic/criteria-catalog.json")) {
             criteriaCatalog = CriteriaCatalog.parse(in);
         }
@@ -61,14 +61,14 @@ class RuleSetServiceTest {
 
     @Test
     void returnsTheRuleSetWithGreatestActiveFromNotAfterNow() {
-        RuleSetEntity entity = new RuleSetEntity(UUID.randomUUID(), "java-senior", "v2",
+        final RuleSetEntity entity = new RuleSetEntity(UUID.randomUUID(), "java-senior", "v2",
                 Instant.parse("2026-07-01T00:00:00Z"), 75, 40,
                 List.of(new kg.tunduk.cvscan.screening.scoring.CriterionWeight("java_spring", 20)),
                 Instant.now());
         when(ruleSetRepository.findFirstByPositionAndActiveFromLessThanEqualOrderByActiveFromDesc(eq("java-senior"), any(Instant.class)))
                 .thenReturn(Optional.of(entity));
 
-        RuleSetResponse response = service().findActive("java-senior");
+        final RuleSetResponse response = service().findActive("java-senior");
 
         assertThat(response.getVersion()).isEqualTo("v2");
         assertThat(response.getMinApproveScore()).isEqualTo(75);
@@ -88,7 +88,7 @@ class RuleSetServiceTest {
     void createsRuleSetWhenPositionVersionPairIsNew() {
         when(ruleSetRepository.findByPositionAndVersion("java-senior", "v3")).thenReturn(Optional.empty());
 
-        RuleSetResponse response = service().create(validRequest());
+        final RuleSetResponse response = service().create(validRequest());
 
         assertThat(response.getPosition()).isEqualTo("java-senior");
         assertThat(response.getVersion()).isEqualTo("v3");
@@ -112,7 +112,7 @@ class RuleSetServiceTest {
     @Test
     void rejectsWeightsReferencingUnknownCanonicalCriterion() {
         when(ruleSetRepository.findByPositionAndVersion("java-senior", "v3")).thenReturn(Optional.empty());
-        RuleSetRequest request = new RuleSetRequest("java-senior", "v3", Instant.parse("2026-08-01T00:00:00Z").atOffset(ZoneOffset.UTC),
+        final RuleSetRequest request = new RuleSetRequest("java-senior", "v3", Instant.parse("2026-08-01T00:00:00Z").atOffset(ZoneOffset.UTC),
                 80, 45, List.of(new CriterionWeight("docker_kubernetes", 100)));
 
         assertThatThrownBy(() -> service().create(request))
@@ -127,7 +127,7 @@ class RuleSetServiceTest {
         when(ruleSetRepository.findByPositionAndVersion("java-senior", "v3")).thenReturn(Optional.empty());
         // "spring" - валидный алиас для нормализации входящих событий, но наборы правил
         // должны ссылаться напрямую на канонический id "java_spring".
-        RuleSetRequest request = new RuleSetRequest("java-senior", "v3", Instant.parse("2026-08-01T00:00:00Z").atOffset(ZoneOffset.UTC),
+        final RuleSetRequest request = new RuleSetRequest("java-senior", "v3", Instant.parse("2026-08-01T00:00:00Z").atOffset(ZoneOffset.UTC),
                 80, 45, List.of(new CriterionWeight("spring", 100)));
 
         assertThatThrownBy(() -> service().create(request))

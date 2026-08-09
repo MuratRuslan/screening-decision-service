@@ -19,18 +19,18 @@ public class RuleSetController {
 
     private final RuleSetService ruleSetService;
 
-    public RuleSetController(RuleSetService ruleSetService) {
+    public RuleSetController(final RuleSetService ruleSetService) {
         this.ruleSetService = ruleSetService;
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public RuleSetResponse createRuleSet(@Valid @RequestBody RuleSetRequest request) {
+    public RuleSetResponse createRuleSet(@Valid @RequestBody final RuleSetRequest request) {
         return ruleSetService.create(request);
     }
 
     @GetMapping("/active")
-    public RuleSetResponse getActiveRuleSet(@RequestParam String position) {
+    public RuleSetResponse getActiveRuleSet(@RequestParam final String position) {
         return ruleSetService.findActive(position);
     }
 }

@@ -22,7 +22,7 @@ class ScoreCalculatorTest {
 
     @Test
     void allOkYieldsFullScoreAndAutoApprove() {
-        Map<String, NormalizedCriterion> criteria = Map.of(
+        final Map<String, NormalizedCriterion> criteria = Map.of(
                 "java_spring", ok("java_spring", "7 лет"),
                 "postgres_acid", ok("postgres_acid", "ACID"),
                 "kafka_reliability", ok("kafka_reliability", "DLQ"),
@@ -30,7 +30,7 @@ class ScoreCalculatorTest {
                 "observability", ok("observability", "Prometheus")
         );
 
-        ScoreOutcome outcome = ScoreCalculator.calculate(JAVA_SENIOR_V1, criteria);
+        final ScoreOutcome outcome = ScoreCalculator.calculate(JAVA_SENIOR_V1, criteria);
 
         assertThat(outcome.score()).isEqualTo(100);
         assertThat(outcome.decision()).isEqualTo(Decision.AUTO_APPROVE);
@@ -39,7 +39,7 @@ class ScoreCalculatorTest {
 
     @Test
     void allNoYieldsZeroScoreAndAutoReject() {
-        Map<String, NormalizedCriterion> criteria = Map.of(
+        final Map<String, NormalizedCriterion> criteria = Map.of(
                 "java_spring", no("java_spring", "нет опыта"),
                 "postgres_acid", no("postgres_acid", "нет опыта"),
                 "kafka_reliability", no("kafka_reliability", "нет опыта"),
@@ -47,7 +47,7 @@ class ScoreCalculatorTest {
                 "observability", no("observability", "нет опыта")
         );
 
-        ScoreOutcome outcome = ScoreCalculator.calculate(JAVA_SENIOR_V1, criteria);
+        final ScoreOutcome outcome = ScoreCalculator.calculate(JAVA_SENIOR_V1, criteria);
 
         assertThat(outcome.score()).isEqualTo(0);
         assertThat(outcome.decision()).isEqualTo(Decision.AUTO_REJECT);
@@ -59,7 +59,7 @@ class ScoreCalculatorTest {
 
     @Test
     void allPartialYieldsHalfWeightScoreAndNeedsReview() {
-        Map<String, NormalizedCriterion> criteria = Map.of(
+        final Map<String, NormalizedCriterion> criteria = Map.of(
                 "java_spring", partial("java_spring", "middle+"),
                 "postgres_acid", partial("postgres_acid", "базовый SQL"),
                 "kafka_reliability", partial("kafka_reliability", "без DLQ"),
@@ -67,7 +67,7 @@ class ScoreCalculatorTest {
                 "observability", partial("observability", "только логи")
         );
 
-        ScoreOutcome outcome = ScoreCalculator.calculate(JAVA_SENIOR_V1, criteria);
+        final ScoreOutcome outcome = ScoreCalculator.calculate(JAVA_SENIOR_V1, criteria);
 
         // 25*0.5 + 20*0.5 + 25*0.5 + 15*0.5 + 15*0.5 = 50.0, округление вниз один раз
         assertThat(outcome.score()).isEqualTo(50);
@@ -77,20 +77,20 @@ class ScoreCalculatorTest {
 
     @Test
     void missingCriterionIsTreatedAsNo() {
-        Map<String, NormalizedCriterion> criteria = Map.of(
+        final Map<String, NormalizedCriterion> criteria = Map.of(
                 "java_spring", ok("java_spring", "7 лет"),
                 "postgres_acid", ok("postgres_acid", "ACID"),
                 "kafka_reliability", ok("kafka_reliability", "DLQ")
                 // "contracts" и "observability" отсутствуют во входящем событии
         );
 
-        ScoreOutcome outcome = ScoreCalculator.calculate(JAVA_SENIOR_V1, criteria);
+        final ScoreOutcome outcome = ScoreCalculator.calculate(JAVA_SENIOR_V1, criteria);
 
         // 25 + 20 + 25 + 0 + 0 = 70
         assertThat(outcome.score()).isEqualTo(70);
         assertThat(outcome.decision()).isEqualTo(Decision.NEEDS_REVIEW);
 
-        RuleEvaluation contracts = findByKey(outcome, "contracts");
+        final RuleEvaluation contracts = findByKey(outcome, "contracts");
         assertThat(contracts.result()).isEqualTo(RuleResult.FAIL);
         assertThat(contracts.points()).isZero();
         assertThat(contracts.reason()).contains("отсутствует");
@@ -98,14 +98,14 @@ class ScoreCalculatorTest {
 
     @Test
     void minApproveScoreBoundaryIsInclusive() {
-        RuleSet boundaryRuleSet = new RuleSet("x", "v1", Instant.EPOCH, 80, 45,
+        final RuleSet boundaryRuleSet = new RuleSet("x", "v1", Instant.EPOCH, 80, 45,
                 List.of(new CriterionWeight("a", 80), new CriterionWeight("b", 20)));
-        Map<String, NormalizedCriterion> criteria = Map.of(
+        final Map<String, NormalizedCriterion> criteria = Map.of(
                 "a", ok("a", "full"),
                 "b", no("b", "none")
         );
 
-        ScoreOutcome outcome = ScoreCalculator.calculate(boundaryRuleSet, criteria);
+        final ScoreOutcome outcome = ScoreCalculator.calculate(boundaryRuleSet, criteria);
 
         assertThat(outcome.score()).isEqualTo(80);
         assertThat(outcome.decision()).isEqualTo(Decision.AUTO_APPROVE);
@@ -113,14 +113,14 @@ class ScoreCalculatorTest {
 
     @Test
     void maxRejectScoreBoundaryIsInclusive() {
-        RuleSet boundaryRuleSet = new RuleSet("x", "v1", Instant.EPOCH, 80, 45,
+        final RuleSet boundaryRuleSet = new RuleSet("x", "v1", Instant.EPOCH, 80, 45,
                 List.of(new CriterionWeight("a", 45), new CriterionWeight("b", 55)));
-        Map<String, NormalizedCriterion> criteria = Map.of(
+        final Map<String, NormalizedCriterion> criteria = Map.of(
                 "a", ok("a", "full"),
                 "b", no("b", "none")
         );
 
-        ScoreOutcome outcome = ScoreCalculator.calculate(boundaryRuleSet, criteria);
+        final ScoreOutcome outcome = ScoreCalculator.calculate(boundaryRuleSet, criteria);
 
         assertThat(outcome.score()).isEqualTo(45);
         assertThat(outcome.decision()).isEqualTo(Decision.AUTO_REJECT);
@@ -128,14 +128,14 @@ class ScoreCalculatorTest {
 
     @Test
     void scoreJustAboveMaxRejectAndBelowMinApproveIsNeedsReview() {
-        RuleSet ruleSet = new RuleSet("x", "v1", Instant.EPOCH, 80, 45,
+        final RuleSet ruleSet = new RuleSet("x", "v1", Instant.EPOCH, 80, 45,
                 List.of(new CriterionWeight("a", 46), new CriterionWeight("b", 54)));
-        Map<String, NormalizedCriterion> criteria = Map.of(
+        final Map<String, NormalizedCriterion> criteria = Map.of(
                 "a", ok("a", "full"),
                 "b", no("b", "none")
         );
 
-        ScoreOutcome outcome = ScoreCalculator.calculate(ruleSet, criteria);
+        final ScoreOutcome outcome = ScoreCalculator.calculate(ruleSet, criteria);
 
         assertThat(outcome.score()).isEqualTo(46);
         assertThat(outcome.decision()).isEqualTo(Decision.NEEDS_REVIEW);
@@ -143,14 +143,14 @@ class ScoreCalculatorTest {
 
     @Test
     void totalWeightAboveHundredIsClampedToHundred() {
-        RuleSet overweightRuleSet = new RuleSet("x", "v1", Instant.EPOCH, 80, 45,
+        final RuleSet overweightRuleSet = new RuleSet("x", "v1", Instant.EPOCH, 80, 45,
                 List.of(new CriterionWeight("a", 80), new CriterionWeight("b", 80)));
-        Map<String, NormalizedCriterion> criteria = Map.of(
+        final Map<String, NormalizedCriterion> criteria = Map.of(
                 "a", ok("a", "full"),
                 "b", ok("b", "full")
         );
 
-        ScoreOutcome outcome = ScoreCalculator.calculate(overweightRuleSet, criteria);
+        final ScoreOutcome outcome = ScoreCalculator.calculate(overweightRuleSet, criteria);
 
         assertThat(outcome.score()).isEqualTo(100);
         assertThat(outcome.decision()).isEqualTo(Decision.AUTO_APPROVE);
@@ -158,7 +158,7 @@ class ScoreCalculatorTest {
 
     @Test
     void ruleResultsPreserveRuleSetWeightOrder() {
-        Map<String, NormalizedCriterion> criteria = Map.of(
+        final Map<String, NormalizedCriterion> criteria = Map.of(
                 "java_spring", ok("java_spring", "x"),
                 "postgres_acid", ok("postgres_acid", "x"),
                 "kafka_reliability", ok("kafka_reliability", "x"),
@@ -166,29 +166,29 @@ class ScoreCalculatorTest {
                 "observability", ok("observability", "x")
         );
 
-        ScoreOutcome outcome = ScoreCalculator.calculate(JAVA_SENIOR_V1, criteria);
+        final ScoreOutcome outcome = ScoreCalculator.calculate(JAVA_SENIOR_V1, criteria);
 
         assertThat(outcome.ruleResults())
                 .extracting(RuleEvaluation::key)
                 .containsExactly("java_spring", "postgres_acid", "kafka_reliability", "contracts", "observability");
     }
 
-    private static RuleEvaluation findByKey(ScoreOutcome outcome, String key) {
+    private static RuleEvaluation findByKey(final ScoreOutcome outcome, final String key) {
         return outcome.ruleResults().stream()
                 .filter(r -> r.key().equals(key))
                 .findFirst()
                 .orElseThrow();
     }
 
-    private static NormalizedCriterion ok(String key, String comment) {
+    private static NormalizedCriterion ok(final String key, final String comment) {
         return new NormalizedCriterion(key, CriterionResult.OK, comment);
     }
 
-    private static NormalizedCriterion partial(String key, String comment) {
+    private static NormalizedCriterion partial(final String key, final String comment) {
         return new NormalizedCriterion(key, CriterionResult.PARTIAL, comment);
     }
 
-    private static NormalizedCriterion no(String key, String comment) {
+    private static NormalizedCriterion no(final String key, final String comment) {
         return new NormalizedCriterion(key, CriterionResult.NO, comment);
     }
 }

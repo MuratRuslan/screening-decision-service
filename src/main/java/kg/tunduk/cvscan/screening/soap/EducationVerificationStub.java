@@ -20,25 +20,25 @@ public class EducationVerificationStub {
 
     private final EducationVerificationXmlCodec codec;
 
-    public EducationVerificationStub(EducationVerificationXmlCodec codec) {
+    public EducationVerificationStub(final EducationVerificationXmlCodec codec) {
         this.codec = codec;
     }
 
-    public String handle(String requestXml) {
+    public String handle(final String requestXml) {
         simulateNetworkLatency();
 
-        VerifyEducationRequest request = codec.unmarshalRequest(requestXml);
-        EducationVerificationResult result = evaluate(request.educationText());
-        VerifyEducationResponse response = new VerifyEducationResponse(request.candidateId(), result, messageFor(result));
+        final VerifyEducationRequest request = codec.unmarshalRequest(requestXml);
+        final EducationVerificationResult result = evaluate(request.educationText());
+        final VerifyEducationResponse response = new VerifyEducationResponse(request.candidateId(), result, messageFor(result));
         return codec.marshalResponse(response);
     }
 
-    private EducationVerificationResult evaluate(String educationText) {
+    private EducationVerificationResult evaluate(final String educationText) {
         if (educationText == null || educationText.isBlank()) {
             return EducationVerificationResult.INVALID_FORMAT;
         }
-        boolean hasYear = YEAR_PATTERN.matcher(educationText).find();
-        boolean hasSubstantiveText = educationText.trim().length() >= 8;
+        final boolean hasYear = YEAR_PATTERN.matcher(educationText).find();
+        final boolean hasSubstantiveText = educationText.trim().length() >= 8;
         if (hasYear && hasSubstantiveText) {
             return EducationVerificationResult.VERIFIED;
         }
@@ -48,7 +48,7 @@ public class EducationVerificationStub {
         return EducationVerificationResult.INVALID_FORMAT;
     }
 
-    private String messageFor(EducationVerificationResult result) {
+    private String messageFor(final EducationVerificationResult result) {
         return switch (result) {
             case VERIFIED -> "Образование подтверждено по формату (найден год и текст)";
             case NEEDS_REVIEW -> "Формат неполный, требуется ручная проверка";

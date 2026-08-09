@@ -14,11 +14,11 @@ public class NonRetryableEventException extends RuntimeException {
     private final String errorCode;
     private final List<ErrorResponseDetailsInner> details;
 
-    public NonRetryableEventException(String errorCode, String message) {
+    public NonRetryableEventException(final String errorCode, final String message) {
         this(errorCode, message, List.of());
     }
 
-    public NonRetryableEventException(String errorCode, String message, List<ErrorResponseDetailsInner> details) {
+    public NonRetryableEventException(final String errorCode, final String message, final List<ErrorResponseDetailsInner> details) {
         super(message);
         this.errorCode = errorCode;
         this.details = details;

@@ -1,7 +1,7 @@
 package kg.tunduk.cvscan.screening.messaging.producer;
 
 public class KafkaSendException extends RuntimeException {
-    public KafkaSendException(String message, Throwable cause) {
+    public KafkaSendException(final String message, final Throwable cause) {
         super(message, cause);
     }
 }

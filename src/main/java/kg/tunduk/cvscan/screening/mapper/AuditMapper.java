@@ -11,8 +11,8 @@ public final class AuditMapper {
     private AuditMapper() {
     }
 
-    public static AuditEntry toResponse(DecisionAuditEntity entity) {
-        AuditEntry response = new AuditEntry(
+    public static AuditEntry toResponse(final DecisionAuditEntity entity) {
+        final AuditEntry response = new AuditEntry(
                 entity.getId(),
                 entity.getDecisionId(),
                 AuditAction.valueOf(entity.getAction().name()),

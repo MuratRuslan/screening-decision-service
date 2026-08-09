@@ -20,11 +20,11 @@ public final class ScreeningDecisionSpecifications {
     private ScreeningDecisionSpecifications() {
     }
 
-    public static Specification<ScreeningDecisionEntity> filter(String position, Decision decision,
-                                                                  SourceVerdict sourceVerdict, Integer minScore,
-                                                                  String search) {
+    public static Specification<ScreeningDecisionEntity> filter(final String position, final Decision decision,
+                                                                  final SourceVerdict sourceVerdict, final Integer minScore,
+                                                                  final String search) {
         return (root, query, cb) -> {
-            List<Predicate> predicates = new ArrayList<>();
+            final List<Predicate> predicates = new ArrayList<>();
 
             if (position != null && !position.isBlank()) {
                 predicates.add(cb.equal(root.get("position"), position));
@@ -39,7 +39,7 @@ public final class ScreeningDecisionSpecifications {
                 predicates.add(cb.greaterThanOrEqualTo(root.get("score"), minScore));
             }
             if (search != null && !search.isBlank()) {
-                String pattern = "%" + search.toLowerCase(Locale.ROOT) + "%";
+                final String pattern = "%" + search.toLowerCase(Locale.ROOT) + "%";
                 predicates.add(cb.or(
                         cb.like(cb.lower(root.get("candidateId")), pattern),
                         cb.like(cb.lower(root.get("name")), pattern),

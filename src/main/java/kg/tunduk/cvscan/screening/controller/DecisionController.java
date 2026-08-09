@@ -28,43 +28,43 @@ public class DecisionController {
     private final DecisionQueryService decisionQueryService;
     private final DecisionOverrideService decisionOverrideService;
 
-    public DecisionController(DecisionQueryService decisionQueryService, DecisionOverrideService decisionOverrideService) {
+    public DecisionController(final DecisionQueryService decisionQueryService, final DecisionOverrideService decisionOverrideService) {
         this.decisionQueryService = decisionQueryService;
         this.decisionOverrideService = decisionOverrideService;
     }
 
     @GetMapping
     public DecisionPage listDecisions(
-            @RequestParam(required = false) String position,
-            @RequestParam(required = false) Decision decision,
-            @RequestParam(required = false) SourceVerdict sourceVerdict,
-            @RequestParam(required = false) Integer minScore,
-            @RequestParam(required = false) String search,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
-            @RequestParam(defaultValue = "decidedAt,desc") String sort) {
+            @RequestParam(required = false) final String position,
+            @RequestParam(required = false) final Decision decision,
+            @RequestParam(required = false) final SourceVerdict sourceVerdict,
+            @RequestParam(required = false) final Integer minScore,
+            @RequestParam(required = false) final String search,
+            @RequestParam(defaultValue = "0") final int page,
+            @RequestParam(defaultValue = "20") final int size,
+            @RequestParam(defaultValue = "decidedAt,desc") final String sort) {
         return decisionQueryService.list(position, decision, sourceVerdict, minScore, search, page, size, sort);
     }
 
     @GetMapping("/{id}")
-    public DecisionResponse getDecision(@PathVariable UUID id) {
+    public DecisionResponse getDecision(@PathVariable final UUID id) {
         return decisionQueryService.get(id);
     }
 
     @GetMapping("/by-candidate/{candidateId}")
-    public DecisionResponse getLatestDecisionByCandidate(@PathVariable String candidateId) {
+    public DecisionResponse getLatestDecisionByCandidate(@PathVariable final String candidateId) {
         return decisionQueryService.getLatestByCandidate(candidateId);
     }
 
     @PatchMapping("/{id}/override")
-    public DecisionResponse overrideDecision(@PathVariable UUID id,
-                                              @RequestHeader("expectedVersion") int expectedVersion,
-                                              @Valid @RequestBody DecisionOverrideRequest request) {
+    public DecisionResponse overrideDecision(@PathVariable final UUID id,
+                                              @RequestHeader("expectedVersion") final int expectedVersion,
+                                              @Valid @RequestBody final DecisionOverrideRequest request) {
         return decisionOverrideService.override(id, expectedVersion, request);
     }
 
     @GetMapping("/{id}/audit")
-    public List<AuditEntry> getDecisionAudit(@PathVariable UUID id) {
+    public List<AuditEntry> getDecisionAudit(@PathVariable final UUID id) {
         return decisionQueryService.audit(id);
     }
 }

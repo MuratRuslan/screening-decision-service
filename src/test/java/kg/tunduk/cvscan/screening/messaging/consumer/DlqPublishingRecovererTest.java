@@ -37,18 +37,18 @@ class DlqPublishingRecovererTest {
 
     @Test
     void extractsErrorCodeAndDetailsFromWrappedNonRetryableException() throws Exception {
-        NonRetryableEventException cause = new NonRetryableEventException("SCHEMA_VALIDATION_ERROR", "bad key",
+        final NonRetryableEventException cause = new NonRetryableEventException("SCHEMA_VALIDATION_ERROR", "bad key",
                 List.of(new ErrorResponseDetailsInner().message("must match pattern").pointer("/criteria/0/key")));
-        ListenerExecutionFailedException wrapped = new ListenerExecutionFailedException("listener failed", cause);
-        ConsumerRecord<String, String> record = new ConsumerRecord<>("cv.parsed", 0, 42L, "candidate-1",
+        final ListenerExecutionFailedException wrapped = new ListenerExecutionFailedException("listener failed", cause);
+        final ConsumerRecord<String, String> record = new ConsumerRecord<>("cv.parsed", 0, 42L, "candidate-1",
                 "{\"key\":\"value\"}");
 
         recoverer().accept(record, wrapped);
 
-        ArgumentCaptor<String> payloadCaptor = ArgumentCaptor.forClass(String.class);
+        final ArgumentCaptor<String> payloadCaptor = ArgumentCaptor.forClass(String.class);
         verify(kafkaTemplate).send(eq("screening.decision.dlq"), eq("candidate-1"), payloadCaptor.capture());
 
-        DlqEvent dlqEvent = MAPPER.readValue(payloadCaptor.getValue(), DlqEvent.class);
+        final DlqEvent dlqEvent = MAPPER.readValue(payloadCaptor.getValue(), DlqEvent.class);
         assertThat(dlqEvent.errorCode()).isEqualTo("SCHEMA_VALIDATION_ERROR");
         assertThat(dlqEvent.errorMessage()).isEqualTo("bad key");
         assertThat(dlqEvent.details()).hasSize(1);
@@ -60,16 +60,16 @@ class DlqPublishingRecovererTest {
 
     @Test
     void fallsBackToRawStringWhenPayloadIsNotValidJson() throws Exception {
-        ListenerExecutionFailedException wrapped = new ListenerExecutionFailedException("listener failed",
+        final ListenerExecutionFailedException wrapped = new ListenerExecutionFailedException("listener failed",
                 new RuntimeException("boom"));
-        ConsumerRecord<String, String> record = new ConsumerRecord<>("cv.parsed", 0, 1L, "candidate-2", "not json at all");
+        final ConsumerRecord<String, String> record = new ConsumerRecord<>("cv.parsed", 0, 1L, "candidate-2", "not json at all");
 
         recoverer().accept(record, wrapped);
 
-        ArgumentCaptor<String> payloadCaptor = ArgumentCaptor.forClass(String.class);
+        final ArgumentCaptor<String> payloadCaptor = ArgumentCaptor.forClass(String.class);
         verify(kafkaTemplate).send(eq("screening.decision.dlq"), eq("candidate-2"), payloadCaptor.capture());
 
-        DlqEvent dlqEvent = MAPPER.readValue(payloadCaptor.getValue(), DlqEvent.class);
+        final DlqEvent dlqEvent = MAPPER.readValue(payloadCaptor.getValue(), DlqEvent.class);
         assertThat(dlqEvent.errorCode()).isEqualTo("PROCESSING_ERROR");
         assertThat(dlqEvent.originalPayload()).isEqualTo("not json at all");
     }

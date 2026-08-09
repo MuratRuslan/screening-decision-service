@@ -46,18 +46,18 @@ class DlqIT {
 
     @Test
     void invalidEventIsRoutedToDlqAndNextValidEventStillProcesses() throws Exception {
-        String candidateId = KafkaTestSupport.uniqueCandidateId("it-invalid");
-        String invalidJson = invalidPayload(candidateId);
+        final String candidateId = KafkaTestSupport.uniqueCandidateId("it-invalid");
+        final String invalidJson = invalidPayload(candidateId);
 
-        try (Consumer<String, String> dlqConsumer = KafkaTestSupport.createConsumer(consumerFactory, dlqTopic)) {
+        try (final Consumer<String, String> dlqConsumer = KafkaTestSupport.createConsumer(consumerFactory, dlqTopic)) {
             kafkaTemplate.send(cvParsedTopic, candidateId, invalidJson).get(10, TimeUnit.SECONDS);
 
             boolean found = false;
-            long deadline = System.currentTimeMillis() + 25_000;
+            final long deadline = System.currentTimeMillis() + 25_000;
             String lastSeenPayload = null;
             while (!found && System.currentTimeMillis() < deadline) {
-                ConsumerRecords<String, String> records = dlqConsumer.poll(Duration.ofSeconds(2));
-                for (var record : records) {
+                final ConsumerRecords<String, String> records = dlqConsumer.poll(Duration.ofSeconds(2));
+                for (final var record : records) {
                     lastSeenPayload = record.value();
                     if (record.value() != null && record.value().contains(candidateId)) {
                         found = true;
@@ -72,8 +72,8 @@ class DlqIT {
 
         // Следующее валидное событие всё равно должно обработаться нормально - невалидное
         // не должно было заблокировать партицию.
-        String validCandidateId = KafkaTestSupport.uniqueCandidateId("it-after-invalid");
-        String validJson = KafkaTestSupport.sampleEventJson(validCandidateId, Instant.now());
+        final String validCandidateId = KafkaTestSupport.uniqueCandidateId("it-after-invalid");
+        final String validJson = KafkaTestSupport.sampleEventJson(validCandidateId, Instant.now());
         kafkaTemplate.send(cvParsedTopic, validCandidateId, validJson).get(10, TimeUnit.SECONDS);
 
         KafkaTestSupport.awaitUntil(20_000, () ->
@@ -81,10 +81,10 @@ class DlqIT {
     }
 
     /** Не проходит валидацию JSON Schema: имя слишком короткое, email не является валидным адресом. */
-    private String invalidPayload(String candidateId) throws Exception {
-        String raw = KafkaTestSupport.sampleEventJson(candidateId, Instant.now());
-        JsonNode node = KafkaTestSupport.readJson(raw);
-        ObjectNode obj = (ObjectNode) node;
+    private String invalidPayload(final String candidateId) throws Exception {
+        final String raw = KafkaTestSupport.sampleEventJson(candidateId, Instant.now());
+        final JsonNode node = KafkaTestSupport.readJson(raw);
+        final ObjectNode obj = (ObjectNode) node;
         obj.put("name", "x");
         obj.put("email", "not-an-email");
         return obj.toString();

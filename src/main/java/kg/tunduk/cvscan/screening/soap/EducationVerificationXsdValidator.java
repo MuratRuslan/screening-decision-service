@@ -30,54 +30,54 @@ public class EducationVerificationXsdValidator {
 
     private final Schema schema;
 
-    public EducationVerificationXsdValidator(Schema schema) {
+    public EducationVerificationXsdValidator(final Schema schema) {
         this.schema = schema;
     }
 
-    public static Schema loadSchema(InputStream xsdStream) throws SAXException {
-        SchemaFactory factory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
+    public static Schema loadSchema(final InputStream xsdStream) throws SAXException {
+        final SchemaFactory factory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
         return factory.newSchema(new StreamSource(xsdStream));
     }
 
-    public List<XmlDiagnostic> validate(String xml) {
-        List<XmlDiagnostic> diagnostics = new ArrayList<>();
-        Deque<String> path = new ArrayDeque<>();
+    public List<XmlDiagnostic> validate(final String xml) {
+        final List<XmlDiagnostic> diagnostics = new ArrayList<>();
+        final Deque<String> path = new ArrayDeque<>();
 
-        DefaultHandler handler = new DefaultHandler() {
+        final DefaultHandler handler = new DefaultHandler() {
             @Override
-            public void startElement(String uri, String localName, String qName, Attributes attributes) {
+            public void startElement(final String uri, final String localName, final String qName, final Attributes attributes) {
                 path.addLast(localName);
             }
 
             @Override
-            public void endElement(String uri, String localName, String qName) {
+            public void endElement(final String uri, final String localName, final String qName) {
                 if (!path.isEmpty()) {
                     path.removeLast();
                 }
             }
 
             @Override
-            public void warning(SAXParseException e) {
+            public void warning(final SAXParseException e) {
                 // Предупреждения схемы не считаются нарушением контракта.
             }
 
             @Override
-            public void error(SAXParseException e) {
+            public void error(final SAXParseException e) {
                 diagnostics.add(new XmlDiagnostic(currentPath(path), e.getMessage()));
             }
 
             @Override
-            public void fatalError(SAXParseException e) {
+            public void fatalError(final SAXParseException e) {
                 diagnostics.add(new XmlDiagnostic(currentPath(path), e.getMessage()));
             }
         };
 
         try {
-            SAXParserFactory factory = SAXParserFactory.newInstance();
+            final SAXParserFactory factory = SAXParserFactory.newInstance();
             factory.setNamespaceAware(true);
             factory.setSchema(schema);
-            SAXParser parser = factory.newSAXParser();
-            XMLReader reader = parser.getXMLReader();
+            final SAXParser parser = factory.newSAXParser();
+            final XMLReader reader = parser.getXMLReader();
             reader.setContentHandler(handler);
             reader.setErrorHandler(handler);
             reader.parse(new InputSource(new StringReader(xml)));
@@ -88,7 +88,7 @@ public class EducationVerificationXsdValidator {
         return diagnostics;
     }
 
-    private static String currentPath(Deque<String> path) {
+    private static String currentPath(final Deque<String> path) {
         return path.isEmpty() ? "/" : "/" + String.join("/", path);
     }
 }

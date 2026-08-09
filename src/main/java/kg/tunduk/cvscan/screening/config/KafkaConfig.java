@@ -15,9 +15,9 @@ import org.springframework.util.backoff.ExponentialBackOff;
 public class KafkaConfig {
 
     @Bean
-    public DlqPublishingRecoverer dlqPublishingRecoverer(KafkaTemplate<String, String> kafkaTemplate,
-                                                           ObjectMapper objectMapper,
-                                                           @Value("${app.kafka.topics.decision-dlq}") String dlqTopic) {
+    public DlqPublishingRecoverer dlqPublishingRecoverer(final KafkaTemplate<String, String> kafkaTemplate,
+                                                           final ObjectMapper objectMapper,
+                                                           @Value("${app.kafka.topics.decision-dlq}") final String dlqTopic) {
         return new DlqPublishingRecoverer(kafkaTemplate, objectMapper, dlqTopic);
     }
 
@@ -30,16 +30,16 @@ public class KafkaConfig {
      * в один и тот же DLQ recoverer.
      */
     @Bean
-    public CommonErrorHandler kafkaErrorHandler(DlqPublishingRecoverer dlqPublishingRecoverer,
-                                                 @Value("${app.kafka.consumer.retry.initial-interval-ms}") long initialIntervalMs,
-                                                 @Value("${app.kafka.consumer.retry.multiplier}") double multiplier,
-                                                 @Value("${app.kafka.consumer.retry.max-interval-ms}") long maxIntervalMs,
-                                                 @Value("${app.kafka.consumer.retry.max-elapsed-time-ms}") long maxElapsedTimeMs) {
-        ExponentialBackOff backOff = new ExponentialBackOff(initialIntervalMs, multiplier);
+    public CommonErrorHandler kafkaErrorHandler(final DlqPublishingRecoverer dlqPublishingRecoverer,
+                                                 @Value("${app.kafka.consumer.retry.initial-interval-ms}") final long initialIntervalMs,
+                                                 @Value("${app.kafka.consumer.retry.multiplier}") final double multiplier,
+                                                 @Value("${app.kafka.consumer.retry.max-interval-ms}") final long maxIntervalMs,
+                                                 @Value("${app.kafka.consumer.retry.max-elapsed-time-ms}") final long maxElapsedTimeMs) {
+        final ExponentialBackOff backOff = new ExponentialBackOff(initialIntervalMs, multiplier);
         backOff.setMaxInterval(maxIntervalMs);
         backOff.setMaxElapsedTime(maxElapsedTimeMs);
 
-        DefaultErrorHandler errorHandler = new DefaultErrorHandler(dlqPublishingRecoverer, backOff);
+        final DefaultErrorHandler errorHandler = new DefaultErrorHandler(dlqPublishingRecoverer, backOff);
         errorHandler.addNotRetryableExceptions(NonRetryableEventException.class);
         return errorHandler;
     }

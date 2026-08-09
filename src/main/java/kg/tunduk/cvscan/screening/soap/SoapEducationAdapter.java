@@ -19,32 +19,32 @@ public class SoapEducationAdapter {
     private final EducationVerificationXsdValidator xsdValidator;
     private final EducationVerificationStub stub;
 
-    public SoapEducationAdapter(EducationVerificationXmlCodec codec,
-                                 EducationVerificationXsdValidator xsdValidator,
-                                 EducationVerificationStub stub) {
+    public SoapEducationAdapter(final EducationVerificationXmlCodec codec,
+                                 final EducationVerificationXsdValidator xsdValidator,
+                                 final EducationVerificationStub stub) {
         this.codec = codec;
         this.xsdValidator = xsdValidator;
         this.stub = stub;
     }
 
-    public EducationVerificationOutcome verify(String candidateId, String fullName, String educationText) {
+    public EducationVerificationOutcome verify(final String candidateId, final String fullName, final String educationText) {
         try {
-            VerifyEducationRequest request = new VerifyEducationRequest(
+            final VerifyEducationRequest request = new VerifyEducationRequest(
                     candidateId, fullName, educationText == null ? "" : educationText);
 
-            String requestXml = codec.marshalRequest(request);
-            List<XmlDiagnostic> requestErrors = xsdValidator.validate(requestXml);
+            final String requestXml = codec.marshalRequest(request);
+            final List<XmlDiagnostic> requestErrors = xsdValidator.validate(requestXml);
             if (!requestErrors.isEmpty()) {
                 return EducationVerificationOutcome.invalid("REQUEST_XSD_VIOLATION", requestErrors);
             }
 
-            String responseXml = stub.handle(requestXml);
-            List<XmlDiagnostic> responseErrors = xsdValidator.validate(responseXml);
+            final String responseXml = stub.handle(requestXml);
+            final List<XmlDiagnostic> responseErrors = xsdValidator.validate(responseXml);
             if (!responseErrors.isEmpty()) {
                 return EducationVerificationOutcome.invalid("RESPONSE_XSD_VIOLATION", responseErrors);
             }
 
-            VerifyEducationResponse response = codec.unmarshalResponse(responseXml);
+            final VerifyEducationResponse response = codec.unmarshalResponse(responseXml);
             return EducationVerificationOutcome.success(response.result(), response.message());
         } catch (Exception e) {
             return EducationVerificationOutcome.invalid("ADAPTER_ERROR", List.of(new XmlDiagnostic("/", e.getMessage())));

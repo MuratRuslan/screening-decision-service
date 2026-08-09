@@ -16,7 +16,7 @@ class EducationVerificationXsdValidatorTest {
 
     @BeforeAll
     static void loadValidator() throws Exception {
-        try (InputStream in = EducationVerificationXsdValidatorTest.class.getClassLoader()
+        try (final InputStream in = EducationVerificationXsdValidatorTest.class.getClassLoader()
                 .getResourceAsStream("contract/soap/education-verification.xsd")) {
             validator = new EducationVerificationXsdValidator(EducationVerificationXsdValidator.loadSchema(in));
         }
@@ -24,7 +24,7 @@ class EducationVerificationXsdValidatorTest {
 
     @Test
     void validRequestXmlProducesNoDiagnostics() {
-        String xml = """
+        final String xml = """
                 <VerifyEducationRequest xmlns="%s">
                     <candidateId>senior-test</candidateId>
                     <fullName>Тест Тестов</fullName>
@@ -37,7 +37,7 @@ class EducationVerificationXsdValidatorTest {
 
     @Test
     void validResponseXmlWithoutOptionalMessageProducesNoDiagnostics() {
-        String xml = """
+        final String xml = """
                 <VerifyEducationResponse xmlns="%s">
                     <candidateId>senior-test</candidateId>
                     <result>VERIFIED</result>
@@ -49,27 +49,27 @@ class EducationVerificationXsdValidatorTest {
 
     @Test
     void missingRequiredElementIsReported() {
-        String xml = """
+        final String xml = """
                 <VerifyEducationRequest xmlns="%s">
                     <candidateId>senior-test</candidateId>
                 </VerifyEducationRequest>
                 """.formatted(NS);
 
-        List<XmlDiagnostic> diagnostics = validator.validate(xml);
+        final List<XmlDiagnostic> diagnostics = validator.validate(xml);
 
         assertThat(diagnostics).isNotEmpty();
     }
 
     @Test
     void invalidEnumValueIsReportedWithElementPath() {
-        String xml = """
+        final String xml = """
                 <VerifyEducationResponse xmlns="%s">
                     <candidateId>senior-test</candidateId>
                     <result>MAYBE</result>
                 </VerifyEducationResponse>
                 """.formatted(NS);
 
-        List<XmlDiagnostic> diagnostics = validator.validate(xml);
+        final List<XmlDiagnostic> diagnostics = validator.validate(xml);
 
         assertThat(diagnostics).isNotEmpty();
         assertThat(diagnostics).anySatisfy(d -> assertThat(d.path()).contains("result"));
@@ -77,7 +77,7 @@ class EducationVerificationXsdValidatorTest {
 
     @Test
     void malformedXmlIsReportedRatherThanThrowing() {
-        List<XmlDiagnostic> diagnostics = validator.validate("<not-even-xml");
+        final List<XmlDiagnostic> diagnostics = validator.validate("<not-even-xml");
 
         assertThat(diagnostics).isNotEmpty();
     }

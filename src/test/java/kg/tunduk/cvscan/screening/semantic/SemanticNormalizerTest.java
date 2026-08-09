@@ -17,14 +17,14 @@ class SemanticNormalizerTest {
 
     @BeforeAll
     static void loadCatalog() throws IOException {
-        try (InputStream in = SemanticNormalizerTest.class.getClassLoader()
+        try (final InputStream in = SemanticNormalizerTest.class.getClassLoader()
                 .getResourceAsStream("semantic/criteria-catalog.json")) {
             catalog = CriteriaCatalog.parse(in);
         }
     }
 
-    private static Criterium criterium(String key, String result, String comment) {
-        Criterium item = new Criterium();
+    private static Criterium criterium(final String key, final String result, final String comment) {
+        final Criterium item = new Criterium();
         item.setKey(key);
         item.setResult(Criterium.Result.valueOf(result));
         item.setComment(comment);
@@ -33,7 +33,7 @@ class SemanticNormalizerTest {
 
     @Test
     void resolvesExactCanonicalKey() {
-        NormalizationResult result = SemanticNormalizer.normalize(catalog,
+        final NormalizationResult result = SemanticNormalizer.normalize(catalog,
                 List.of(criterium("java_spring", "OK", "7 лет")));
 
         assertThat(result.byCanonicalKey()).containsKey("java_spring");
@@ -43,7 +43,7 @@ class SemanticNormalizerTest {
 
     @Test
     void resolvesAliasToCanonicalKey() {
-        NormalizationResult result = SemanticNormalizer.normalize(catalog,
+        final NormalizationResult result = SemanticNormalizer.normalize(catalog,
                 List.of(criterium("spring_boot", "PARTIAL", "базовый Spring Boot")));
 
         assertThat(result.byCanonicalKey()).containsKey("java_spring");
@@ -53,7 +53,7 @@ class SemanticNormalizerTest {
 
     @Test
     void resolutionIsCaseInsensitive() {
-        NormalizationResult result = SemanticNormalizer.normalize(catalog,
+        final NormalizationResult result = SemanticNormalizer.normalize(catalog,
                 List.of(criterium("KAFKA", "OK", "продакшн Kafka")));
 
         assertThat(result.byCanonicalKey()).containsKey("kafka_reliability");
@@ -61,7 +61,7 @@ class SemanticNormalizerTest {
 
     @Test
     void unknownKeyIsNeverSilentlyDropped() {
-        NormalizationResult result = SemanticNormalizer.normalize(catalog,
+        final NormalizationResult result = SemanticNormalizer.normalize(catalog,
                 List.of(criterium("docker_kubernetes", "OK", "K8s опыт")));
 
         assertThat(result.byCanonicalKey()).isEmpty();
@@ -71,7 +71,7 @@ class SemanticNormalizerTest {
 
     @Test
     void normalizesMultipleCriteriaTogether() {
-        NormalizationResult result = SemanticNormalizer.normalize(catalog, List.of(
+        final NormalizationResult result = SemanticNormalizer.normalize(catalog, List.of(
                 criterium("java", "OK", "Java"),
                 criterium("postgresql", "PARTIAL", "Postgres"),
                 criterium("dlq", "OK", "DLQ"),

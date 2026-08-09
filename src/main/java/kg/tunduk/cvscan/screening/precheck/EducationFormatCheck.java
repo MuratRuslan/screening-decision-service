@@ -10,7 +10,7 @@ public class EducationFormatCheck implements PrecheckCheck {
 
     private final SoapEducationAdapter soapEducationAdapter;
 
-    public EducationFormatCheck(SoapEducationAdapter soapEducationAdapter) {
+    public EducationFormatCheck(final SoapEducationAdapter soapEducationAdapter) {
         this.soapEducationAdapter = soapEducationAdapter;
     }
 
@@ -20,12 +20,12 @@ public class EducationFormatCheck implements PrecheckCheck {
     }
 
     @Override
-    public PrecheckResult run(CvParsedEvent event) {
-        EducationVerificationOutcome outcome = soapEducationAdapter.verify(
+    public PrecheckResult run(final CvParsedEvent event) {
+        final EducationVerificationOutcome outcome = soapEducationAdapter.verify(
                 event.getCandidateId(), event.getName(), event.getEducation());
 
         if (!outcome.valid()) {
-            String detail = outcome.errorCode() + ": " + outcome.diagnostics();
+            final String detail = outcome.errorCode() + ": " + outcome.diagnostics();
             return new PrecheckResult(name(), PrecheckStatus.FAILED, detail, 0);
         }
 

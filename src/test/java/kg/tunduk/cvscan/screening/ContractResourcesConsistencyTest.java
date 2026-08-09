@@ -24,10 +24,10 @@ class ContractResourcesConsistencyTest {
             "java-senior/contract/soap/education-verification.xsd, contract/soap/education-verification.xsd",
             "java-senior/semantic/criteria-catalog.json, semantic/criteria-catalog.json"
     })
-    void classpathCopyMatchesReferenceContract(String referencePath, String classpathResource) throws IOException {
-        byte[] reference = Files.readAllBytes(Path.of(referencePath));
-        byte[] classpathCopy;
-        try (InputStream in = getClass().getClassLoader().getResourceAsStream(classpathResource)) {
+    void classpathCopyMatchesReferenceContract(final String referencePath, final String classpathResource) throws IOException {
+        final byte[] reference = Files.readAllBytes(Path.of(referencePath));
+        final byte[] classpathCopy;
+        try (final InputStream in = getClass().getClassLoader().getResourceAsStream(classpathResource)) {
             assertThat(in).as("classpath resource %s must exist", classpathResource).isNotNull();
             classpathCopy = in.readAllBytes();
         }

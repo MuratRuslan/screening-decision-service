@@ -44,11 +44,11 @@ public class DecisionPersistenceService {
     private final ObjectMapper objectMapper;
     private final String decisionCreatedTopic;
 
-    public DecisionPersistenceService(ScreeningDecisionRepository decisionRepository,
-                                       DecisionAuditRepository auditRepository,
-                                       OutboxRepository outboxRepository,
-                                       ObjectMapper objectMapper,
-                                       @Value("${app.kafka.topics.decision-created}") String decisionCreatedTopic) {
+    public DecisionPersistenceService(final ScreeningDecisionRepository decisionRepository,
+                                       final DecisionAuditRepository auditRepository,
+                                       final OutboxRepository outboxRepository,
+                                       final ObjectMapper objectMapper,
+                                       @Value("${app.kafka.topics.decision-created}") final String decisionCreatedTopic) {
         this.decisionRepository = decisionRepository;
         this.auditRepository = auditRepository;
         this.outboxRepository = outboxRepository;
@@ -64,12 +64,12 @@ public class DecisionPersistenceService {
      * трактовать как "дубликат проигнорирован", а не как ошибку.
      */
     @Transactional
-    public UUID persist(CvParsedEvent event, RuleSetEntity ruleSet, ScoreOutcome outcome,
-                         String semanticCatalogVersion, NormalizationResult normalization,
-                         List<PrecheckResult> precheckResults) {
-        Instant decidedAt = Instant.now();
+    public UUID persist(final CvParsedEvent event, final RuleSetEntity ruleSet, final ScoreOutcome outcome,
+                         final String semanticCatalogVersion, final NormalizationResult normalization,
+                         final List<PrecheckResult> precheckResults) {
+        final Instant decidedAt = Instant.now();
 
-        ScreeningDecisionEntity decision = new ScreeningDecisionEntity(
+        final ScreeningDecisionEntity decision = new ScreeningDecisionEntity(
                 UUID.randomUUID(),
                 event.getCandidateId(),
                 event.getParsedAt(),
@@ -97,9 +97,9 @@ public class DecisionPersistenceService {
         return decision.getId();
     }
 
-    private Map<String, Object> auditPayload(ScreeningDecisionEntity decision, NormalizationResult normalization,
-                                              List<PrecheckResult> precheckResults) {
-        Map<String, Object> payload = new LinkedHashMap<>();
+    private Map<String, Object> auditPayload(final ScreeningDecisionEntity decision, final NormalizationResult normalization,
+                                              final List<PrecheckResult> precheckResults) {
+        final Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("score", decision.getScore());
         payload.put("decision", decision.getDecision().name());
         payload.put("ruleSetVersion", decision.getRuleSetVersion());
@@ -111,8 +111,8 @@ public class DecisionPersistenceService {
         return payload;
     }
 
-    private String serializeDecisionCreated(ScreeningDecisionEntity decision) {
-        DecisionCreatedEvent event = new DecisionCreatedEvent(
+    private String serializeDecisionCreated(final ScreeningDecisionEntity decision) {
+        final DecisionCreatedEvent event = new DecisionCreatedEvent(
                 UUID.randomUUID(),
                 decision.getId(),
                 decision.getCandidateId(),

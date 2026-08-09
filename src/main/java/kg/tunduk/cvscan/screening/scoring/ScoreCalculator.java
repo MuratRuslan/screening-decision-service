@@ -21,28 +21,28 @@ public final class ScoreCalculator {
      *                       канонических ключей через семантический каталог. Критерий
      *                       rule-set без соответствующей записи считается {@link CriterionResult#NO}.
      */
-    public static ScoreOutcome calculate(RuleSet ruleSet, Map<String, NormalizedCriterion> byCanonicalKey) {
-        List<RuleEvaluation> evaluations = new ArrayList<>(ruleSet.weights().size());
+    public static ScoreOutcome calculate(final RuleSet ruleSet, final Map<String, NormalizedCriterion> byCanonicalKey) {
+        final List<RuleEvaluation> evaluations = new ArrayList<>(ruleSet.weights().size());
         double totalContribution = 0.0;
 
-        for (CriterionWeight weight : ruleSet.weights()) {
-            NormalizedCriterion criterion = byCanonicalKey.get(weight.key());
-            CriterionResult result = criterion != null ? criterion.result() : CriterionResult.NO;
-            double contribution = weight.weight() * percentageFor(result);
+        for (final CriterionWeight weight : ruleSet.weights()) {
+            final NormalizedCriterion criterion = byCanonicalKey.get(weight.key());
+            final CriterionResult result = criterion != null ? criterion.result() : CriterionResult.NO;
+            final double contribution = weight.weight() * percentageFor(result);
             totalContribution += contribution;
 
-            String reason = criterion != null
+            final String reason = criterion != null
                     ? reasonFor(result, criterion.comment())
                     : MISSING_CRITERION_REASON;
             evaluations.add(new RuleEvaluation(weight.key(), ruleResultFor(result), (int) Math.floor(contribution), reason));
         }
 
-        int score = clamp((int) Math.floor(totalContribution));
-        Decision decision = decide(ruleSet, score);
+        final int score = clamp((int) Math.floor(totalContribution));
+        final Decision decision = decide(ruleSet, score);
         return new ScoreOutcome(score, decision, List.copyOf(evaluations));
     }
 
-    private static double percentageFor(CriterionResult result) {
+    private static double percentageFor(final CriterionResult result) {
         return switch (result) {
             case OK -> 1.0;
             case PARTIAL -> 0.5;
@@ -50,7 +50,7 @@ public final class ScoreCalculator {
         };
     }
 
-    private static RuleResult ruleResultFor(CriterionResult result) {
+    private static RuleResult ruleResultFor(final CriterionResult result) {
         return switch (result) {
             case OK -> RuleResult.PASS;
             case PARTIAL -> RuleResult.WARN;
@@ -58,18 +58,18 @@ public final class ScoreCalculator {
         };
     }
 
-    private static String reasonFor(CriterionResult result, String comment) {
+    private static String reasonFor(final CriterionResult result, final String comment) {
         if (comment == null || comment.isBlank()) {
             return result.name();
         }
         return result.name() + ": " + comment;
     }
 
-    private static int clamp(int score) {
+    private static int clamp(final int score) {
         return Math.max(0, Math.min(100, score));
     }
 
-    private static Decision decide(RuleSet ruleSet, int score) {
+    private static Decision decide(final RuleSet ruleSet, final int score) {
         if (score >= ruleSet.minApproveScore()) {
             return Decision.AUTO_APPROVE;
         }

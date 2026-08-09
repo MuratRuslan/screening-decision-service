@@ -65,10 +65,10 @@ class DecisionProcessingServiceTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        try (InputStream in = getClass().getClassLoader().getResourceAsStream("contract/json-schema/cv-parsed.schema.json")) {
+        try (final InputStream in = getClass().getClassLoader().getResourceAsStream("contract/json-schema/cv-parsed.schema.json")) {
             schemaValidator = new CvParsedJsonSchemaValidator(CvParsedJsonSchemaValidator.loadSchema(in));
         }
-        try (InputStream in = getClass().getClassLoader().getResourceAsStream("semantic/criteria-catalog.json")) {
+        try (final InputStream in = getClass().getClassLoader().getResourceAsStream("semantic/criteria-catalog.json")) {
             criteriaCatalog = CriteriaCatalog.parse(in);
         }
         validSampleJson = Files.readString(Path.of("java-senior/test-events/cv-parsed-sample.json"));
@@ -79,7 +79,7 @@ class DecisionProcessingServiceTest {
         MDC.clear();
     }
 
-    private DecisionProcessingService service(UnknownKeyPolicy policy) {
+    private DecisionProcessingService service(final UnknownKeyPolicy policy) {
         return new DecisionProcessingService(schemaValidator, criteriaCatalog, ruleSetRepository,
                 precheckOrchestrator, decisionPersistenceService, MAPPER, policy, tracer);
     }
@@ -97,7 +97,7 @@ class DecisionProcessingServiceTest {
 
     @Test
     void malformedJsonIsNonRetryable() {
-        DecisionProcessingService service = service(UnknownKeyPolicy.AUDIT);
+        final DecisionProcessingService service = service(UnknownKeyPolicy.AUDIT);
 
         assertThatThrownBy(() -> service.process("{not valid json"))
                 .isInstanceOf(NonRetryableEventException.class)
@@ -108,7 +108,7 @@ class DecisionProcessingServiceTest {
 
     @Test
     void blankPayloadIsNonRetryable() {
-        DecisionProcessingService service = service(UnknownKeyPolicy.AUDIT);
+        final DecisionProcessingService service = service(UnknownKeyPolicy.AUDIT);
 
         assertThatThrownBy(() -> service.process("   "))
                 .isInstanceOf(NonRetryableEventException.class)
@@ -117,15 +117,15 @@ class DecisionProcessingServiceTest {
 
     @Test
     void schemaViolationIsNonRetryableWithJsonPointerDetails() throws Exception {
-        ObjectNode node = (ObjectNode) MAPPER.readTree(validSampleJson);
+        final ObjectNode node = (ObjectNode) MAPPER.readTree(validSampleJson);
         ((ObjectNode) node.get("criteria").get(0)).put("key", "Invalid Key!");
 
-        DecisionProcessingService service = service(UnknownKeyPolicy.AUDIT);
+        final DecisionProcessingService service = service(UnknownKeyPolicy.AUDIT);
 
         assertThatThrownBy(() -> service.process(MAPPER.writeValueAsString(node)))
                 .isInstanceOf(NonRetryableEventException.class)
                 .satisfies(ex -> {
-                    NonRetryableEventException nre = (NonRetryableEventException) ex;
+                    final NonRetryableEventException nre = (NonRetryableEventException) ex;
                     assertThat(nre.getErrorCode()).isEqualTo("SCHEMA_VALIDATION_ERROR");
                     assertThat(nre.getDetails()).anySatisfy(d -> assertThat(d.getPointer().get()).isEqualTo("/criteria/0/key"));
                 });
@@ -134,15 +134,15 @@ class DecisionProcessingServiceTest {
 
     @Test
     void unknownCriterionKeyUnderDlqPolicyIsNonRetryable() throws Exception {
-        ObjectNode node = (ObjectNode) MAPPER.readTree(validSampleJson);
-        var criteria = (com.fasterxml.jackson.databind.node.ArrayNode) node.get("criteria");
-        ObjectNode extra = MAPPER.createObjectNode();
+        final ObjectNode node = (ObjectNode) MAPPER.readTree(validSampleJson);
+        final var criteria = (com.fasterxml.jackson.databind.node.ArrayNode) node.get("criteria");
+        final ObjectNode extra = MAPPER.createObjectNode();
         extra.put("key", "docker_kubernetes");
         extra.put("result", "OK");
         extra.put("comment", "K8s опыт");
         criteria.add(extra);
 
-        DecisionProcessingService service = service(UnknownKeyPolicy.DLQ);
+        final DecisionProcessingService service = service(UnknownKeyPolicy.DLQ);
 
         assertThatThrownBy(() -> service.process(MAPPER.writeValueAsString(node)))
                 .isInstanceOf(NonRetryableEventException.class)
@@ -152,9 +152,9 @@ class DecisionProcessingServiceTest {
 
     @Test
     void unknownCriterionKeyUnderAuditPolicyStillPersistsDecision() throws Exception {
-        ObjectNode node = (ObjectNode) MAPPER.readTree(validSampleJson);
-        var criteria = (com.fasterxml.jackson.databind.node.ArrayNode) node.get("criteria");
-        ObjectNode extra = MAPPER.createObjectNode();
+        final ObjectNode node = (ObjectNode) MAPPER.readTree(validSampleJson);
+        final var criteria = (com.fasterxml.jackson.databind.node.ArrayNode) node.get("criteria");
+        final ObjectNode extra = MAPPER.createObjectNode();
         extra.put("key", "docker_kubernetes");
         extra.put("result", "OK");
         extra.put("comment", "K8s опыт");
@@ -164,10 +164,10 @@ class DecisionProcessingServiceTest {
                 .thenReturn(Optional.of(javaSeniorRuleSet()));
         when(precheckOrchestrator.runAll(any())).thenReturn(List.of());
 
-        DecisionProcessingService service = service(UnknownKeyPolicy.AUDIT);
+        final DecisionProcessingService service = service(UnknownKeyPolicy.AUDIT);
         service.process(MAPPER.writeValueAsString(node));
 
-        ArgumentCaptor<NormalizationResult> normalizationCaptor = ArgumentCaptor.forClass(NormalizationResult.class);
+        final ArgumentCaptor<NormalizationResult> normalizationCaptor = ArgumentCaptor.forClass(NormalizationResult.class);
         verify(decisionPersistenceService).persist(any(CvParsedEvent.class), any(RuleSetEntity.class),
                 any(ScoreOutcome.class), anyString(), normalizationCaptor.capture(), any());
         assertThat(normalizationCaptor.getValue().hasUnmapped()).isTrue();
@@ -178,7 +178,7 @@ class DecisionProcessingServiceTest {
         when(ruleSetRepository.findFirstByPositionAndActiveFromLessThanEqualOrderByActiveFromDesc(eq("java-senior"), any(Instant.class)))
                 .thenReturn(Optional.empty());
 
-        DecisionProcessingService service = service(UnknownKeyPolicy.AUDIT);
+        final DecisionProcessingService service = service(UnknownKeyPolicy.AUDIT);
 
         assertThatThrownBy(() -> service.process(validSampleJson))
                 .isInstanceOf(NonRetryableEventException.class)
@@ -191,10 +191,10 @@ class DecisionProcessingServiceTest {
                 .thenReturn(Optional.of(javaSeniorRuleSet()));
         when(precheckOrchestrator.runAll(any())).thenReturn(List.of());
 
-        DecisionProcessingService service = service(UnknownKeyPolicy.AUDIT);
+        final DecisionProcessingService service = service(UnknownKeyPolicy.AUDIT);
         service.process(validSampleJson);
 
-        ArgumentCaptor<CvParsedEvent> eventCaptor = ArgumentCaptor.forClass(CvParsedEvent.class);
+        final ArgumentCaptor<CvParsedEvent> eventCaptor = ArgumentCaptor.forClass(CvParsedEvent.class);
         verify(decisionPersistenceService).persist(eventCaptor.capture(), any(RuleSetEntity.class),
                 any(ScoreOutcome.class), eq(criteriaCatalog.version()), any(NormalizationResult.class), any());
         assertThat(eventCaptor.getValue().getCandidateId()).isEqualTo("senior-asanov-bakyt");
@@ -208,12 +208,12 @@ class DecisionProcessingServiceTest {
                 .thenReturn(Optional.of(javaSeniorRuleSet()));
         when(precheckOrchestrator.runAll(any())).thenReturn(List.of());
 
-        DecisionProcessingService service = service(UnknownKeyPolicy.AUDIT);
+        final DecisionProcessingService service = service(UnknownKeyPolicy.AUDIT);
 
         // CvParsedListener больше не вызывает process(String) напрямую - сначала он разбирает
         // сырой payload в валидированный CvParsedEvent, затем обрабатывает его. Здесь
         // воспроизводится та же двухшаговая последовательность.
-        CvParsedEvent event = service.parseAndValidate(validSampleJson);
+        final CvParsedEvent event = service.parseAndValidate(validSampleJson);
         assertThat(event.getCandidateId()).isEqualTo("senior-asanov-bakyt");
 
         service.process(event);
@@ -230,7 +230,7 @@ class DecisionProcessingServiceTest {
         when(decisionPersistenceService.persist(any(), any(), any(), anyString(), any(), any()))
                 .thenThrow(new DataIntegrityViolationException("duplicate key value violates unique constraint"));
 
-        DecisionProcessingService service = service(UnknownKeyPolicy.AUDIT);
+        final DecisionProcessingService service = service(UnknownKeyPolicy.AUDIT);
 
         // Не должно бросать исключение - дубликат это ожидаемое штатное поведение, а не ошибка обработки.
         service.process(validSampleJson);

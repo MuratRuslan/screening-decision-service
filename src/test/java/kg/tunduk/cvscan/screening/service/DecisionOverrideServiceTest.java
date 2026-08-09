@@ -54,18 +54,18 @@ class DecisionOverrideServiceTest {
 
     @Test
     void matchingExpectedVersionAppliesOverrideAndWritesAudit() {
-        ScreeningDecisionEntity decision = newDecision();
+        final ScreeningDecisionEntity decision = newDecision();
         when(decisionRepository.findById(decision.getId())).thenReturn(Optional.of(decision));
 
-        DecisionOverrideRequest request = new DecisionOverrideRequest(Decision.AUTO_APPROVE,
+        final DecisionOverrideRequest request = new DecisionOverrideRequest(Decision.AUTO_APPROVE,
                 "Техническое интервью подтвердило уровень выше автооценки");
-        DecisionResponse response = service().override(decision.getId(), 1, request);
+        final DecisionResponse response = service().override(decision.getId(), 1, request);
 
         assertThat(response.getDecision()).isEqualTo(Decision.AUTO_APPROVE);
         assertThat(response.getOverridden()).isTrue();
         assertThat(response.getOverrideReason().get()).isEqualTo(request.getReason());
 
-        ArgumentCaptor<DecisionAuditEntity> auditCaptor = ArgumentCaptor.forClass(DecisionAuditEntity.class);
+        final ArgumentCaptor<DecisionAuditEntity> auditCaptor = ArgumentCaptor.forClass(DecisionAuditEntity.class);
         verify(auditRepository).save(auditCaptor.capture());
         assertThat(auditCaptor.getValue().getDecisionId()).isEqualTo(decision.getId());
         assertThat(auditCaptor.getValue().getPayload()).containsEntry("previousDecision", "NEEDS_REVIEW");
@@ -74,10 +74,10 @@ class DecisionOverrideServiceTest {
 
     @Test
     void staleExpectedVersionIsRejectedWithoutMutatingOrAuditing() {
-        ScreeningDecisionEntity decision = newDecision();
+        final ScreeningDecisionEntity decision = newDecision();
         when(decisionRepository.findById(decision.getId())).thenReturn(Optional.of(decision));
 
-        DecisionOverrideRequest request = new DecisionOverrideRequest(Decision.AUTO_APPROVE, "some reason text");
+        final DecisionOverrideRequest request = new DecisionOverrideRequest(Decision.AUTO_APPROVE, "some reason text");
 
         assertThatThrownBy(() -> service().override(decision.getId(), 2, request))
                 .isInstanceOf(VersionConflictException.class)
@@ -90,7 +90,7 @@ class DecisionOverrideServiceTest {
 
     @Test
     void unknownDecisionIdIsNotFound() {
-        UUID id = UUID.randomUUID();
+        final UUID id = UUID.randomUUID();
         when(decisionRepository.findById(id)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service().override(id, 1, new DecisionOverrideRequest(Decision.AUTO_REJECT, "some reason text")))

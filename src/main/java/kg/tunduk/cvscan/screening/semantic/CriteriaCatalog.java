@@ -21,18 +21,18 @@ public record CriteriaCatalog(String version, Map<String, String> aliasToCanonic
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
-    public static CriteriaCatalog parse(InputStream in) throws IOException {
-        JsonNode root = MAPPER.readTree(in);
-        String version = root.path("version").asText();
+    public static CriteriaCatalog parse(final InputStream in) throws IOException {
+        final JsonNode root = MAPPER.readTree(in);
+        final String version = root.path("version").asText();
 
-        Map<String, String> aliasToCanonicalId = new HashMap<>();
-        Set<String> canonicalIds = new LinkedHashSet<>();
+        final Map<String, String> aliasToCanonicalId = new HashMap<>();
+        final Set<String> canonicalIds = new LinkedHashSet<>();
 
-        for (JsonNode resource : root.path("resources")) {
-            String id = resource.path("id").asText();
+        for (final JsonNode resource : root.path("resources")) {
+            final String id = resource.path("id").asText();
             canonicalIds.add(id);
             aliasToCanonicalId.put(normalize(id), id);
-            for (JsonNode alias : resource.path("aliases")) {
+            for (final JsonNode alias : resource.path("aliases")) {
                 aliasToCanonicalId.put(normalize(alias.asText()), id);
             }
         }
@@ -41,18 +41,18 @@ public record CriteriaCatalog(String version, Map<String, String> aliasToCanonic
     }
 
     /** Преобразует сырой (возможно, алиасный) ключ критерия в канонический id каталога. */
-    public Optional<String> resolve(String rawKey) {
+    public Optional<String> resolve(final String rawKey) {
         if (rawKey == null) {
             return Optional.empty();
         }
         return Optional.ofNullable(aliasToCanonicalId.get(normalize(rawKey)));
     }
 
-    public boolean isCanonical(String id) {
+    public boolean isCanonical(final String id) {
         return canonicalIds.contains(id);
     }
 
-    private static String normalize(String key) {
+    private static String normalize(final String key) {
         return key.trim().toLowerCase(Locale.ROOT);
     }
 }

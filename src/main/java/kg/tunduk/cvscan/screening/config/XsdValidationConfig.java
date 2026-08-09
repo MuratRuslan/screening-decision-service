@@ -15,7 +15,7 @@ public class XsdValidationConfig {
 
     @Bean
     public EducationVerificationXsdValidator educationVerificationXsdValidator() throws IOException, SAXException {
-        try (InputStream in = new ClassPathResource("contract/soap/education-verification.xsd").getInputStream()) {
+        try (final InputStream in = new ClassPathResource("contract/soap/education-verification.xsd").getInputStream()) {
             return new EducationVerificationXsdValidator(EducationVerificationXsdValidator.loadSchema(in));
         }
     }

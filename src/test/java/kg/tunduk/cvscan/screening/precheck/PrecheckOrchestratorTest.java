@@ -16,7 +16,7 @@ class PrecheckOrchestratorTest {
     private static final CvParsedEvent EVENT = buildEvent();
 
     private static CvParsedEvent buildEvent() {
-        CvParsedEvent event = new CvParsedEvent();
+        final CvParsedEvent event = new CvParsedEvent();
         event.setEventId(UUID.randomUUID());
         event.setCandidateId("candidate-1");
         event.setParsedAt(Instant.now());
@@ -32,7 +32,7 @@ class PrecheckOrchestratorTest {
 
     private record SleepingCheck(String name, long sleepMs, PrecheckStatus status) implements PrecheckCheck {
         @Override
-        public PrecheckResult run(CvParsedEvent event) {
+        public PrecheckResult run(final CvParsedEvent event) {
             try {
                 Thread.sleep(sleepMs);
             } catch (InterruptedException e) {
@@ -44,23 +44,23 @@ class PrecheckOrchestratorTest {
 
     private record ThrowingCheck(String name) implements PrecheckCheck {
         @Override
-        public PrecheckResult run(CvParsedEvent event) {
+        public PrecheckResult run(final CvParsedEvent event) {
             throw new RuntimeException("boom");
         }
     }
 
     @Test
     void checksRunInParallelNotSequentially() {
-        List<PrecheckCheck> checks = List.of(
+        final List<PrecheckCheck> checks = List.of(
                 new SleepingCheck("a", 200, PrecheckStatus.PASSED),
                 new SleepingCheck("b", 200, PrecheckStatus.PASSED));
 
-        try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
-            PrecheckOrchestrator orchestrator = new PrecheckOrchestrator(executor, checks, 10, 5000);
+        try (final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
+            final PrecheckOrchestrator orchestrator = new PrecheckOrchestrator(executor, checks, 10, 5000);
 
-            long start = System.nanoTime();
-            List<PrecheckResult> results = orchestrator.runAll(EVENT);
-            long elapsedMs = (System.nanoTime() - start) / 1_000_000;
+            final long start = System.nanoTime();
+            final List<PrecheckResult> results = orchestrator.runAll(EVENT);
+            final long elapsedMs = (System.nanoTime() - start) / 1_000_000;
 
             assertThat(results).hasSize(2);
             assertThat(results).allSatisfy(r -> assertThat(r.status()).isEqualTo(PrecheckStatus.PASSED));
@@ -71,14 +71,14 @@ class PrecheckOrchestratorTest {
 
     @Test
     void slowCheckTimesOutWithoutBlockingTheOverallResult() {
-        List<PrecheckCheck> checks = List.of(new SleepingCheck("slow", 2000, PrecheckStatus.PASSED));
+        final List<PrecheckCheck> checks = List.of(new SleepingCheck("slow", 2000, PrecheckStatus.PASSED));
 
-        try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
-            PrecheckOrchestrator orchestrator = new PrecheckOrchestrator(executor, checks, 10, 200);
+        try (final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
+            final PrecheckOrchestrator orchestrator = new PrecheckOrchestrator(executor, checks, 10, 200);
 
-            long start = System.nanoTime();
-            List<PrecheckResult> results = orchestrator.runAll(EVENT);
-            long elapsedMs = (System.nanoTime() - start) / 1_000_000;
+            final long start = System.nanoTime();
+            final List<PrecheckResult> results = orchestrator.runAll(EVENT);
+            final long elapsedMs = (System.nanoTime() - start) / 1_000_000;
 
             assertThat(results).hasSize(1);
             assertThat(results.get(0).status()).isEqualTo(PrecheckStatus.TIMEOUT);
@@ -88,14 +88,14 @@ class PrecheckOrchestratorTest {
 
     @Test
     void oneCheckThrowingDoesNotAffectTheOthers() {
-        List<PrecheckCheck> checks = List.of(
+        final List<PrecheckCheck> checks = List.of(
                 new ThrowingCheck("throwing-check"),
                 new SleepingCheck("ok-check", 10, PrecheckStatus.PASSED));
 
-        try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
-            PrecheckOrchestrator orchestrator = new PrecheckOrchestrator(executor, checks, 10, 5000);
+        try (final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
+            final PrecheckOrchestrator orchestrator = new PrecheckOrchestrator(executor, checks, 10, 5000);
 
-            List<PrecheckResult> results = orchestrator.runAll(EVENT);
+            final List<PrecheckResult> results = orchestrator.runAll(EVENT);
 
             assertThat(results).hasSize(2);
             assertThat(byName(results, "throwing-check").status()).isEqualTo(PrecheckStatus.FAILED);
@@ -105,23 +105,23 @@ class PrecheckOrchestratorTest {
 
     @Test
     void semaphorePermitOfOneSerializesConcurrentCalls() {
-        List<PrecheckCheck> checks = List.of(
+        final List<PrecheckCheck> checks = List.of(
                 new SleepingCheck("a", 150, PrecheckStatus.PASSED),
                 new SleepingCheck("b", 150, PrecheckStatus.PASSED));
 
-        try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
-            PrecheckOrchestrator orchestrator = new PrecheckOrchestrator(executor, checks, 1, 5000);
+        try (final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
+            final PrecheckOrchestrator orchestrator = new PrecheckOrchestrator(executor, checks, 1, 5000);
 
-            long start = System.nanoTime();
+            final long start = System.nanoTime();
             orchestrator.runAll(EVENT);
-            long elapsedMs = (System.nanoTime() - start) / 1_000_000;
+            final long elapsedMs = (System.nanoTime() - start) / 1_000_000;
 
             // При всего 1 разрешении оба вызова по 150мс выполняются последовательно: ~300мс, а не ~150мс.
             assertThat(elapsedMs).isGreaterThanOrEqualTo(280);
         }
     }
 
-    private static PrecheckResult byName(List<PrecheckResult> results, String name) {
+    private static PrecheckResult byName(final List<PrecheckResult> results, final String name) {
         return results.stream().filter(r -> r.name().equals(name)).findFirst().orElseThrow();
     }
 }

@@ -48,9 +48,9 @@ class DecisionQueryServiceTest {
 
         service.list(null, null, null, null, null, 0, 20, "decidedAt,desc");
 
-        ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
+        final ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
         verify(decisionRepository).findAll(any(Specification.class), captor.capture());
-        Sort.Order order = captor.getValue().getSort().getOrderFor("decidedAt");
+        final Sort.Order order = captor.getValue().getSort().getOrderFor("decidedAt");
         assertThat(order).isNotNull();
         assertThat(order.getDirection()).isEqualTo(Sort.Direction.DESC);
     }
@@ -63,9 +63,9 @@ class DecisionQueryServiceTest {
 
         service.list(null, null, null, null, null, 0, 20, "score,asc");
 
-        ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
+        final ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
         verify(decisionRepository).findAll(any(Specification.class), captor.capture());
-        Sort.Order order = captor.getValue().getSort().getOrderFor("score");
+        final Sort.Order order = captor.getValue().getSort().getOrderFor("score");
         assertThat(order).isNotNull();
         assertThat(order.getDirection()).isEqualTo(Sort.Direction.ASC);
     }
@@ -90,7 +90,7 @@ class DecisionQueryServiceTest {
     @Test
     void auditThrowsNotFoundWhenDecisionDoesNotExist() {
         service = service();
-        UUID id = UUID.randomUUID();
+        final UUID id = UUID.randomUUID();
         when(decisionRepository.existsById(id)).thenReturn(false);
 
         assertThatThrownBy(() -> service.audit(id)).isInstanceOf(NotFoundException.class);
@@ -99,7 +99,7 @@ class DecisionQueryServiceTest {
     @Test
     void getThrowsNotFoundWhenDecisionDoesNotExist() {
         service = service();
-        UUID id = UUID.randomUUID();
+        final UUID id = UUID.randomUUID();
         when(decisionRepository.findById(id)).thenReturn(java.util.Optional.empty());
 
         assertThatThrownBy(() -> service.get(id)).isInstanceOf(NotFoundException.class);

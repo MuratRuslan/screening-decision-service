@@ -39,35 +39,35 @@ public class DecisionQueryService {
     private final ScreeningDecisionRepository decisionRepository;
     private final DecisionAuditRepository auditRepository;
 
-    public DecisionQueryService(ScreeningDecisionRepository decisionRepository, DecisionAuditRepository auditRepository) {
+    public DecisionQueryService(final ScreeningDecisionRepository decisionRepository, final DecisionAuditRepository auditRepository) {
         this.decisionRepository = decisionRepository;
         this.auditRepository = auditRepository;
     }
 
-    public DecisionPage list(String position, Decision decision, SourceVerdict sourceVerdict, Integer minScore,
-                              String search, int page, int size, String sort) {
-        Specification<ScreeningDecisionEntity> spec =
+    public DecisionPage list(final String position, final Decision decision, final SourceVerdict sourceVerdict, final Integer minScore,
+                              final String search, final int page, final int size, final String sort) {
+        final Specification<ScreeningDecisionEntity> spec =
                 ScreeningDecisionSpecifications.filter(position, decision, sourceVerdict, minScore, search);
-        Pageable pageable = PageRequest.of(page, size, parseSort(sort));
+        final Pageable pageable = PageRequest.of(page, size, parseSort(sort));
 
-        Page<ScreeningDecisionEntity> result = decisionRepository.findAll(spec, pageable);
-        List<DecisionResponse> content = result.getContent().stream().map(DecisionMapper::toResponse).toList();
+        final Page<ScreeningDecisionEntity> result = decisionRepository.findAll(spec, pageable);
+        final List<DecisionResponse> content = result.getContent().stream().map(DecisionMapper::toResponse).toList();
 
         return new DecisionPage(content, result.getNumber(), result.getSize(),
                 (int) result.getTotalElements(), result.getTotalPages());
     }
 
-    public DecisionResponse get(UUID id) {
+    public DecisionResponse get(final UUID id) {
         return DecisionMapper.toResponse(findEntity(id));
     }
 
-    public DecisionResponse getLatestByCandidate(String candidateId) {
-        ScreeningDecisionEntity entity = decisionRepository.findFirstByCandidateIdOrderByDecidedAtDesc(candidateId)
+    public DecisionResponse getLatestByCandidate(final String candidateId) {
+        final ScreeningDecisionEntity entity = decisionRepository.findFirstByCandidateIdOrderByDecidedAtDesc(candidateId)
                 .orElseThrow(() -> new NotFoundException("Решения для кандидата '" + candidateId + "' не найдены"));
         return DecisionMapper.toResponse(entity);
     }
 
-    public List<AuditEntry> audit(UUID decisionId) {
+    public List<AuditEntry> audit(final UUID decisionId) {
         if (!decisionRepository.existsById(decisionId)) {
             throw new NotFoundException("Решение " + decisionId + " не найдено");
         }
@@ -76,17 +76,17 @@ public class DecisionQueryService {
                 .toList();
     }
 
-    ScreeningDecisionEntity findEntity(UUID id) {
+    ScreeningDecisionEntity findEntity(final UUID id) {
         return decisionRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Решение " + id + " не найдено"));
     }
 
-    private Sort parseSort(String sort) {
+    private Sort parseSort(final String sort) {
         if (sort == null || sort.isBlank()) {
             return Sort.by(Sort.Direction.DESC, "decidedAt");
         }
-        String[] parts = sort.split(",", 2);
-        String property = SORTABLE_PROPERTIES.get(parts[0].trim());
+        final String[] parts = sort.split(",", 2);
+        final String property = SORTABLE_PROPERTIES.get(parts[0].trim());
         if (property == null) {
             throw new BadRequestException("Недопустимое поле сортировки: " + parts[0].trim());
         }

@@ -20,15 +20,15 @@ public final class SemanticNormalizer {
     private SemanticNormalizer() {
     }
 
-    public static NormalizationResult normalize(CriteriaCatalog catalog, List<Criterium> rawCriteria) {
-        Map<String, NormalizedCriterion> byCanonicalKey = new LinkedHashMap<>();
-        List<UnknownCriterion> unmapped = new ArrayList<>();
+    public static NormalizationResult normalize(final CriteriaCatalog catalog, final List<Criterium> rawCriteria) {
+        final Map<String, NormalizedCriterion> byCanonicalKey = new LinkedHashMap<>();
+        final List<UnknownCriterion> unmapped = new ArrayList<>();
 
-        for (Criterium item : rawCriteria) {
-            Optional<String> canonicalKey = catalog.resolve(item.getKey());
+        for (final Criterium item : rawCriteria) {
+            final Optional<String> canonicalKey = catalog.resolve(item.getKey());
             if (canonicalKey.isPresent()) {
-                String key = canonicalKey.get();
-                CriterionResult result = CriterionResult.valueOf(item.getResult().name());
+                final String key = canonicalKey.get();
+                final CriterionResult result = CriterionResult.valueOf(item.getResult().name());
                 byCanonicalKey.put(key, new NormalizedCriterion(key, result, item.getComment()));
             } else {
                 unmapped.add(new UnknownCriterion(item.getKey(), item.getComment()));

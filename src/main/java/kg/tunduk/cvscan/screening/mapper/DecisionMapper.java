@@ -15,12 +15,12 @@ public final class DecisionMapper {
     private DecisionMapper() {
     }
 
-    public static DecisionResponse toResponse(ScreeningDecisionEntity entity) {
-        List<RuleEvaluation> ruleResults = entity.getRuleResults().stream()
+    public static DecisionResponse toResponse(final ScreeningDecisionEntity entity) {
+        final List<RuleEvaluation> ruleResults = entity.getRuleResults().stream()
                 .map(r -> new RuleEvaluation(r.key(), RuleResult.valueOf(r.result().name()), r.points(), r.reason()))
                 .toList();
 
-        DecisionResponse response = new DecisionResponse(
+        final DecisionResponse response = new DecisionResponse(
                 entity.getId(),
                 entity.getCandidateId(),
                 entity.getParsedAt().atOffset(ZoneOffset.UTC),

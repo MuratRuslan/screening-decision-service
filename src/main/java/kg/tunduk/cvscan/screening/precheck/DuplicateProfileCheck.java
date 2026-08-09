@@ -20,11 +20,11 @@ public class DuplicateProfileCheck implements PrecheckCheck {
     }
 
     @Override
-    public PrecheckResult run(CvParsedEvent event) {
+    public PrecheckResult run(final CvParsedEvent event) {
         simulateLookupLatency();
 
-        String email = event.getEmail() == null ? "" : event.getEmail();
-        boolean looksAliased = email.contains("+");
+        final String email = event.getEmail() == null ? "" : event.getEmail();
+        final boolean looksAliased = email.contains("+");
         if (looksAliased) {
             return new PrecheckResult(name(), PrecheckStatus.WARNING,
                     "Похожий профиль по email-алиасу: " + email, 0);

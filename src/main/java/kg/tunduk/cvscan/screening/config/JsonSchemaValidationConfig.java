@@ -13,7 +13,7 @@ public class JsonSchemaValidationConfig {
 
     @Bean
     public CvParsedJsonSchemaValidator cvParsedJsonSchemaValidator() throws IOException {
-        try (InputStream in = new ClassPathResource("contract/json-schema/cv-parsed.schema.json").getInputStream()) {
+        try (final InputStream in = new ClassPathResource("contract/json-schema/cv-parsed.schema.json").getInputStream()) {
             return new CvParsedJsonSchemaValidator(CvParsedJsonSchemaValidator.loadSchema(in));
         }
     }

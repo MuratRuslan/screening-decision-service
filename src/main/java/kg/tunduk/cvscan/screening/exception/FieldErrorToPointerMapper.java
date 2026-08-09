@@ -6,8 +6,8 @@ public final class FieldErrorToPointerMapper {
     private FieldErrorToPointerMapper() {
     }
 
-    public static String toPointer(String fieldPath) {
-        String pointer = fieldPath.replace('.', '/').replace('[', '/').replace("]", "");
+    public static String toPointer(final String fieldPath) {
+        final String pointer = fieldPath.replace('.', '/').replace('[', '/').replace("]", "");
         return pointer.startsWith("/") ? pointer : "/" + pointer;
     }
 }

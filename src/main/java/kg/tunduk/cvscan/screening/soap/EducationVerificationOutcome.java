@@ -11,11 +11,11 @@ public record EducationVerificationOutcome(
         String errorCode,
         List<XmlDiagnostic> diagnostics
 ) {
-    public static EducationVerificationOutcome success(EducationVerificationResult result, String message) {
+    public static EducationVerificationOutcome success(final EducationVerificationResult result, final String message) {
         return new EducationVerificationOutcome(true, result, message, null, List.of());
     }
 
-    public static EducationVerificationOutcome invalid(String errorCode, List<XmlDiagnostic> diagnostics) {
+    public static EducationVerificationOutcome invalid(final String errorCode, final List<XmlDiagnostic> diagnostics) {
         return new EducationVerificationOutcome(false, null, null, errorCode, diagnostics);
     }
 }

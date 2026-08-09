@@ -22,25 +22,25 @@ class CvParsedJsonSchemaValidatorTest {
 
     @BeforeAll
     static void loadValidator() throws IOException {
-        try (InputStream in = CvParsedJsonSchemaValidatorTest.class.getClassLoader()
+        try (final InputStream in = CvParsedJsonSchemaValidatorTest.class.getClassLoader()
                 .getResourceAsStream("contract/json-schema/cv-parsed.schema.json")) {
-            JsonSchema schema = CvParsedJsonSchemaValidator.loadSchema(in);
+            final JsonSchema schema = CvParsedJsonSchemaValidator.loadSchema(in);
             validator = new CvParsedJsonSchemaValidator(schema);
         }
     }
 
     @Test
     void validSampleEventProducesNoErrors() throws IOException {
-        JsonNode node = MAPPER.readTree(Path.of("java-senior/test-events/cv-parsed-sample.json").toFile());
+        final JsonNode node = MAPPER.readTree(Path.of("java-senior/test-events/cv-parsed-sample.json").toFile());
 
-        List<JsonPointerError> errors = validator.validate(node);
+        final List<JsonPointerError> errors = validator.validate(node);
 
         assertThat(errors).isEmpty();
     }
 
     @Test
     void missingRequiredFieldIsReportedAtRootPointer() throws IOException {
-        JsonNode node = MAPPER.readTree("""
+        final JsonNode node = MAPPER.readTree("""
                 {
                   "eventId": "660e8400-e29b-41d4-a716-446655440000",
                   "candidateId": "senior-test",
@@ -53,7 +53,7 @@ class CvParsedJsonSchemaValidatorTest {
                 """);
         // "email" обязателен, но отсутствует
 
-        List<JsonPointerError> errors = validator.validate(node);
+        final List<JsonPointerError> errors = validator.validate(node);
 
         assertThat(errors).isNotEmpty();
         assertThat(errors).anySatisfy(e -> assertThat(e.message()).containsIgnoringCase("email"));
@@ -61,33 +61,33 @@ class CvParsedJsonSchemaValidatorTest {
 
     @Test
     void invalidCriteriaKeyPatternIsReportedWithJsonPointer() throws IOException {
-        String json = Files.readString(Path.of("java-senior/test-events/cv-parsed-sample.json"));
-        JsonNode node = MAPPER.readTree(json);
+        final String json = Files.readString(Path.of("java-senior/test-events/cv-parsed-sample.json"));
+        final JsonNode node = MAPPER.readTree(json);
         ((com.fasterxml.jackson.databind.node.ObjectNode) node.get("criteria").get(0)).put("key", "Java Spring!");
 
-        List<JsonPointerError> errors = validator.validate(node);
+        final List<JsonPointerError> errors = validator.validate(node);
 
         assertThat(errors).anySatisfy(e -> assertThat(e.pointer()).isEqualTo("/criteria/0/key"));
     }
 
     @Test
     void invalidVerdictEnumValueIsReportedWithJsonPointer() throws IOException {
-        String json = Files.readString(Path.of("java-senior/test-events/cv-parsed-sample.json"));
-        JsonNode node = MAPPER.readTree(json);
+        final String json = Files.readString(Path.of("java-senior/test-events/cv-parsed-sample.json"));
+        final JsonNode node = MAPPER.readTree(json);
         ((com.fasterxml.jackson.databind.node.ObjectNode) node).put("verdict", "MAYBE");
 
-        List<JsonPointerError> errors = validator.validate(node);
+        final List<JsonPointerError> errors = validator.validate(node);
 
         assertThat(errors).anySatisfy(e -> assertThat(e.pointer()).isEqualTo("/verdict"));
     }
 
     @Test
     void unknownAdditionalPropertyIsRejected() throws IOException {
-        String json = Files.readString(Path.of("java-senior/test-events/cv-parsed-sample.json"));
-        JsonNode node = MAPPER.readTree(json);
+        final String json = Files.readString(Path.of("java-senior/test-events/cv-parsed-sample.json"));
+        final JsonNode node = MAPPER.readTree(json);
         ((com.fasterxml.jackson.databind.node.ObjectNode) node).put("unexpectedField", "boom");
 
-        List<JsonPointerError> errors = validator.validate(node);
+        final List<JsonPointerError> errors = validator.validate(node);
 
         assertThat(errors).isNotEmpty();
     }

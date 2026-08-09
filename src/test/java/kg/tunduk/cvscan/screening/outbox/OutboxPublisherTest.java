@@ -44,7 +44,7 @@ class OutboxPublisherTest {
 
     @Test
     void successfulSendMarksEventSent() {
-        OutboxEvent event = OutboxEvent.newEvent(UUID.randomUUID(), "SCREENING_DECISION",
+        final OutboxEvent event = OutboxEvent.newEvent(UUID.randomUUID(), "SCREENING_DECISION",
                 "screening.decision.created", "{\"foo\":\"bar\"}");
         when(outboxRepository.claimBatch(50)).thenReturn(List.of(event));
         doNothing().when(decisionEventProducer).send(anyString(), anyString(), anyString(), anyLong());
@@ -58,7 +58,7 @@ class OutboxPublisherTest {
 
     @Test
     void failedSendIncrementsRetryCountAndStaysNew() {
-        OutboxEvent event = OutboxEvent.newEvent(UUID.randomUUID(), "SCREENING_DECISION",
+        final OutboxEvent event = OutboxEvent.newEvent(UUID.randomUUID(), "SCREENING_DECISION",
                 "screening.decision.created", "{\"foo\":\"bar\"}");
         when(outboxRepository.claimBatch(50)).thenReturn(List.of(event));
         doThrow(new KafkaSendException("broker unavailable", new RuntimeException()))
@@ -74,9 +74,9 @@ class OutboxPublisherTest {
 
     @Test
     void oneFailureDoesNotStopTheRestOfTheBatch() {
-        OutboxEvent failing = OutboxEvent.newEvent(UUID.randomUUID(), "SCREENING_DECISION",
+        final OutboxEvent failing = OutboxEvent.newEvent(UUID.randomUUID(), "SCREENING_DECISION",
                 "screening.decision.created", "{}");
-        OutboxEvent succeeding = OutboxEvent.newEvent(UUID.randomUUID(), "SCREENING_DECISION",
+        final OutboxEvent succeeding = OutboxEvent.newEvent(UUID.randomUUID(), "SCREENING_DECISION",
                 "screening.decision.created", "{}");
         when(outboxRepository.claimBatch(50)).thenReturn(List.of(failing, succeeding));
         doThrow(new KafkaSendException("timeout", new RuntimeException()))
