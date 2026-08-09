@@ -1,8 +1,8 @@
 package kg.tunduk.test.senior.screeningdecisionservice.service;
 
-import kg.tunduk.test.senior.screeningdecisionservice.dto.rest.AuditEntryResponse;
-import kg.tunduk.test.senior.screeningdecisionservice.dto.rest.DecisionPage;
-import kg.tunduk.test.senior.screeningdecisionservice.dto.rest.DecisionResponse;
+import kg.tunduk.test.senior.screeningdecisionservice.generated.rest.model.AuditEntry;
+import kg.tunduk.test.senior.screeningdecisionservice.generated.rest.model.DecisionPage;
+import kg.tunduk.test.senior.screeningdecisionservice.generated.rest.model.DecisionResponse;
 import kg.tunduk.test.senior.screeningdecisionservice.exception.BadRequestException;
 import kg.tunduk.test.senior.screeningdecisionservice.exception.NotFoundException;
 import kg.tunduk.test.senior.screeningdecisionservice.mapper.AuditMapper;
@@ -53,7 +53,8 @@ public class DecisionQueryService {
         Page<ScreeningDecisionEntity> result = decisionRepository.findAll(spec, pageable);
         List<DecisionResponse> content = result.getContent().stream().map(DecisionMapper::toResponse).toList();
 
-        return new DecisionPage(content, result.getNumber(), result.getSize(), result.getTotalElements(), result.getTotalPages());
+        return new DecisionPage(content, result.getNumber(), result.getSize(),
+                (int) result.getTotalElements(), result.getTotalPages());
     }
 
     public DecisionResponse get(UUID id) {
@@ -66,7 +67,7 @@ public class DecisionQueryService {
         return DecisionMapper.toResponse(entity);
     }
 
-    public List<AuditEntryResponse> audit(UUID decisionId) {
+    public List<AuditEntry> audit(UUID decisionId) {
         if (!decisionRepository.existsById(decisionId)) {
             throw new NotFoundException("Решение " + decisionId + " не найдено");
         }

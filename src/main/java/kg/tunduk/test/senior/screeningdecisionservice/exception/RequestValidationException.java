@@ -1,20 +1,20 @@
 package kg.tunduk.test.senior.screeningdecisionservice.exception;
 
-import kg.tunduk.test.senior.screeningdecisionservice.dto.rest.ErrorDetail;
+import kg.tunduk.test.senior.screeningdecisionservice.generated.rest.model.ErrorResponseDetailsInner;
 
 import java.util.List;
 
 /** 400 VALIDATION_ERROR for checks that need application state, not just Bean Validation. */
 public class RequestValidationException extends RuntimeException {
 
-    private final List<ErrorDetail> details;
+    private final List<ErrorResponseDetailsInner> details;
 
-    public RequestValidationException(String message, List<ErrorDetail> details) {
+    public RequestValidationException(String message, List<ErrorResponseDetailsInner> details) {
         super(message);
         this.details = details;
     }
 
-    public List<ErrorDetail> getDetails() {
+    public List<ErrorResponseDetailsInner> getDetails() {
         return details;
     }
 }

@@ -1,6 +1,6 @@
 package kg.tunduk.test.senior.screeningdecisionservice.precheck;
 
-import kg.tunduk.test.senior.screeningdecisionservice.dto.kafka.CvParsedEvent;
+import kg.tunduk.test.senior.screeningdecisionservice.generated.kafka.CvParsedEvent;
 
 /**
  * One I/O-bound pre-decision check. Implementations perform their own simulated latency and

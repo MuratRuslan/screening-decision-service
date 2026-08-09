@@ -1,12 +1,12 @@
 package kg.tunduk.test.senior.screeningdecisionservice.integration;
 
 import kg.tunduk.test.senior.screeningdecisionservice.TestcontainersConfiguration;
-import kg.tunduk.test.senior.screeningdecisionservice.dto.rest.AuditEntryResponse;
-import kg.tunduk.test.senior.screeningdecisionservice.dto.rest.DecisionOverrideRequest;
-import kg.tunduk.test.senior.screeningdecisionservice.dto.rest.DecisionResponse;
-import kg.tunduk.test.senior.screeningdecisionservice.dto.rest.ErrorResponse;
-import kg.tunduk.test.senior.screeningdecisionservice.model.AuditAction;
-import kg.tunduk.test.senior.screeningdecisionservice.scoring.Decision;
+import kg.tunduk.test.senior.screeningdecisionservice.generated.rest.model.AuditAction;
+import kg.tunduk.test.senior.screeningdecisionservice.generated.rest.model.AuditEntry;
+import kg.tunduk.test.senior.screeningdecisionservice.generated.rest.model.Decision;
+import kg.tunduk.test.senior.screeningdecisionservice.generated.rest.model.DecisionOverrideRequest;
+import kg.tunduk.test.senior.screeningdecisionservice.generated.rest.model.DecisionResponse;
+import kg.tunduk.test.senior.screeningdecisionservice.generated.rest.model.ErrorResponse;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -47,14 +47,14 @@ class OverrideIT {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().decision()).isEqualTo(Decision.AUTO_REJECT);
-        assertThat(response.getBody().overridden()).isTrue();
-        assertThat(response.getBody().version()).isEqualTo(2);
+        assertThat(response.getBody().getDecision()).isEqualTo(Decision.AUTO_REJECT);
+        assertThat(response.getBody().getOverridden()).isTrue();
+        assertThat(response.getBody().getVersion()).isEqualTo(2);
 
-        ResponseEntity<AuditEntryResponse[]> audit = restTemplate.getForEntity(
-                "/api/v1/decisions/" + HAPPY_PATH_DECISION_ID + "/audit", AuditEntryResponse[].class);
+        ResponseEntity<AuditEntry[]> audit = restTemplate.getForEntity(
+                "/api/v1/decisions/" + HAPPY_PATH_DECISION_ID + "/audit", AuditEntry[].class);
         assertThat(audit.getBody()).isNotNull();
-        assertThat(audit.getBody()).anySatisfy(a -> assertThat(a.action()).isEqualTo(AuditAction.OVERRIDDEN));
+        assertThat(audit.getBody()).anySatisfy(a -> assertThat(a.getAction()).isEqualTo(AuditAction.OVERRIDDEN));
     }
 
     @Test
@@ -70,6 +70,6 @@ class OverrideIT {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
         assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().error()).isEqualTo("VERSION_CONFLICT");
+        assertThat(response.getBody().getError()).isEqualTo("VERSION_CONFLICT");
     }
 }

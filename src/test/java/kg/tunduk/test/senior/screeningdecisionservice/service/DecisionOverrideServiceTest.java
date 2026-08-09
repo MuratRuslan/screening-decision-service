@@ -1,7 +1,8 @@
 package kg.tunduk.test.senior.screeningdecisionservice.service;
 
-import kg.tunduk.test.senior.screeningdecisionservice.dto.rest.DecisionOverrideRequest;
-import kg.tunduk.test.senior.screeningdecisionservice.dto.rest.DecisionResponse;
+import kg.tunduk.test.senior.screeningdecisionservice.generated.rest.model.Decision;
+import kg.tunduk.test.senior.screeningdecisionservice.generated.rest.model.DecisionOverrideRequest;
+import kg.tunduk.test.senior.screeningdecisionservice.generated.rest.model.DecisionResponse;
 import kg.tunduk.test.senior.screeningdecisionservice.exception.NotFoundException;
 import kg.tunduk.test.senior.screeningdecisionservice.exception.VersionConflictException;
 import kg.tunduk.test.senior.screeningdecisionservice.model.DecisionAuditEntity;
@@ -9,7 +10,6 @@ import kg.tunduk.test.senior.screeningdecisionservice.model.ScreeningDecisionEnt
 import kg.tunduk.test.senior.screeningdecisionservice.model.SourceVerdict;
 import kg.tunduk.test.senior.screeningdecisionservice.repository.DecisionAuditRepository;
 import kg.tunduk.test.senior.screeningdecisionservice.repository.ScreeningDecisionRepository;
-import kg.tunduk.test.senior.screeningdecisionservice.scoring.Decision;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -44,7 +44,8 @@ class DecisionOverrideServiceTest {
     private ScreeningDecisionEntity newDecision() {
         return new ScreeningDecisionEntity(UUID.randomUUID(), "senior-test",
                 Instant.parse("2026-06-01T00:00:00Z"), "Тест Тестов", "test@example.com", "java-senior",
-                SourceVerdict.PARTIAL, Decision.NEEDS_REVIEW, 60, "v1", List.of(), "2026.06", Instant.now());
+                SourceVerdict.PARTIAL, kg.tunduk.test.senior.screeningdecisionservice.scoring.Decision.NEEDS_REVIEW,
+                60, "v1", List.of(), "2026.06", Instant.now());
     }
 
     @Test
@@ -56,9 +57,9 @@ class DecisionOverrideServiceTest {
                 "Техническое интервью подтвердило уровень выше автооценки");
         DecisionResponse response = service().override(decision.getId(), 1, request);
 
-        assertThat(response.decision()).isEqualTo(Decision.AUTO_APPROVE);
-        assertThat(response.overridden()).isTrue();
-        assertThat(response.overrideReason()).isEqualTo(request.reason());
+        assertThat(response.getDecision()).isEqualTo(Decision.AUTO_APPROVE);
+        assertThat(response.getOverridden()).isTrue();
+        assertThat(response.getOverrideReason().get()).isEqualTo(request.getReason());
 
         ArgumentCaptor<DecisionAuditEntity> auditCaptor = ArgumentCaptor.forClass(DecisionAuditEntity.class);
         verify(auditRepository).save(auditCaptor.capture());

@@ -1,6 +1,6 @@
 package kg.tunduk.test.senior.screeningdecisionservice.semantic;
 
-import kg.tunduk.test.senior.screeningdecisionservice.dto.kafka.CriteriaItemDto;
+import kg.tunduk.test.senior.screeningdecisionservice.generated.kafka.Criterium;
 import kg.tunduk.test.senior.screeningdecisionservice.scoring.CriterionResult;
 import kg.tunduk.test.senior.screeningdecisionservice.scoring.NormalizedCriterion;
 
@@ -20,18 +20,18 @@ public final class SemanticNormalizer {
     private SemanticNormalizer() {
     }
 
-    public static NormalizationResult normalize(CriteriaCatalog catalog, List<CriteriaItemDto> rawCriteria) {
+    public static NormalizationResult normalize(CriteriaCatalog catalog, List<Criterium> rawCriteria) {
         Map<String, NormalizedCriterion> byCanonicalKey = new LinkedHashMap<>();
         List<UnknownCriterion> unmapped = new ArrayList<>();
 
-        for (CriteriaItemDto item : rawCriteria) {
-            Optional<String> canonicalKey = catalog.resolve(item.key());
+        for (Criterium item : rawCriteria) {
+            Optional<String> canonicalKey = catalog.resolve(item.getKey());
             if (canonicalKey.isPresent()) {
                 String key = canonicalKey.get();
-                CriterionResult result = CriterionResult.valueOf(item.result());
-                byCanonicalKey.put(key, new NormalizedCriterion(key, result, item.comment()));
+                CriterionResult result = CriterionResult.valueOf(item.getResult().name());
+                byCanonicalKey.put(key, new NormalizedCriterion(key, result, item.getComment()));
             } else {
-                unmapped.add(new UnknownCriterion(item.key(), item.comment()));
+                unmapped.add(new UnknownCriterion(item.getKey(), item.getComment()));
             }
         }
 

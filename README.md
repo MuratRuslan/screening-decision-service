@@ -36,6 +36,45 @@ older 1.x line incompatible with the already-present `TestcontainersConfiguratio
 (`org.testcontainers.kafka.KafkaContainer` / `org.testcontainers.postgresql.PostgreSQLContainer`
 package layout).
 
+## Contract-first code generation
+
+REST and Kafka DTOs are generated at build time, not hand-written, so the contract files
+are the single source of truth for wire shapes:
+
+- **OpenAPI Generator** (`org.openapi.generator`, generator `spring`) reads
+  `java-senior/contract/openapi.yaml` and generates **models only** (`globalProperties =
+  [models: ""]` — no API interfaces/controllers, which stay hand-written) into
+  `build/generated/openapi/.../generated.rest.model`. `RuleSetRequest`, `RuleSetResponse`,
+  `DecisionResponse`, `DecisionPage`, `DecisionOverrideRequest`, `AuditEntry`,
+  `ErrorResponse` (+ its inline details item, `ErrorResponseDetailsInner`), and the
+  `Decision`/`SourceVerdict`/`RuleResult`/`AuditAction` enums all come from here, already
+  carrying the contract's Bean Validation annotations (`@NotNull`, `@Pattern`, `@Min`/`@Max`,
+  `@Size`) for `@Valid @RequestBody` binding. Optional+nullable contract fields (e.g.
+  `ErrorResponse.details`, `DecisionResponse.overrideReason`, `AuditEntry.payload`)
+  generate as `JsonNullable<T>` (absent vs. explicit null vs. present) - `JacksonConfig`
+  registers the `JsonNullableModule` bean so Spring's ObjectMapper (de)serializes it
+  correctly instead of as a raw wrapper object.
+- **jsonschema2pojo** (`org.jsonschema2pojo`) reads
+  `java-senior/contract/json-schema/cv-parsed.schema.json` and generates the `cv.parsed`
+  event POJO (`CvParsedEvent`, with nested `Criterium`/`Experience`/`Verdict`/`Result`
+  types) into `build/generated/jsonschema2pojo/.../generated.kafka`, configured with
+  `dateTimeType = java.time.Instant` so date-time fields need no `OffsetDateTime`
+  conversion.
+
+Both point directly at `java-senior/contract/` (never at the `src/main/resources` runtime
+copies), so regenerating after a contract change is automatic on the next build - no
+manual sync step, and no way for the generated types to drift from the fixed contract.
+
+**Domain/persistence types stay hand-written and separate from the generated REST/Kafka
+types on purpose.** `scoring.CriterionWeight`, `scoring.RuleEvaluation`, `scoring.Decision`,
+`model.SourceVerdict`, `model.AuditAction` etc. are used for JPA entity mapping (including
+direct JSONB serialization via Hibernate's `@JdbcTypeCode(SqlTypes.JSON)`) and for the pure
+`ScoreCalculator` logic; the REST layer's generated enums/records share the same constant
+names (they come from the same contract) but are a distinct set of classes. `mapper/`
+(`RuleSetMapper`, `DecisionMapper`, `AuditMapper`) converts between the two at the
+controller boundary - regenerating the OpenAPI/JSON Schema models can never silently change
+what gets persisted or how scoring works, and vice versa.
+
 ## Running locally
 
 ```bash

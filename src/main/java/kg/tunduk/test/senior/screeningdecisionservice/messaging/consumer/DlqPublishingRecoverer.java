@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import kg.tunduk.test.senior.screeningdecisionservice.dto.kafka.DlqEvent;
-import kg.tunduk.test.senior.screeningdecisionservice.dto.rest.ErrorDetail;
+import kg.tunduk.test.senior.screeningdecisionservice.generated.rest.model.ErrorResponseDetailsInner;
 import kg.tunduk.test.senior.screeningdecisionservice.exception.NonRetryableEventException;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.slf4j.Logger;
@@ -41,7 +41,7 @@ public class DlqPublishingRecoverer implements ConsumerRecordRecoverer {
         Optional<NonRetryableEventException> nonRetryable = findNonRetryable(exception);
         String errorCode = nonRetryable.map(NonRetryableEventException::getErrorCode).orElse("PROCESSING_ERROR");
         String errorMessage = nonRetryable.map(Throwable::getMessage).orElseGet(() -> rootMessage(exception));
-        List<ErrorDetail> details = nonRetryable.map(NonRetryableEventException::getDetails).orElse(List.of());
+        List<ErrorResponseDetailsInner> details = nonRetryable.map(NonRetryableEventException::getDetails).orElse(List.of());
 
         String rawValue = record.value() == null ? null : record.value().toString();
         Object originalPayload = tryParseJson(rawValue);

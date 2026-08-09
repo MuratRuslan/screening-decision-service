@@ -1,7 +1,14 @@
 package kg.tunduk.test.senior.screeningdecisionservice.mapper;
 
-import kg.tunduk.test.senior.screeningdecisionservice.dto.rest.DecisionResponse;
+import kg.tunduk.test.senior.screeningdecisionservice.generated.rest.model.Decision;
+import kg.tunduk.test.senior.screeningdecisionservice.generated.rest.model.DecisionResponse;
+import kg.tunduk.test.senior.screeningdecisionservice.generated.rest.model.RuleEvaluation;
+import kg.tunduk.test.senior.screeningdecisionservice.generated.rest.model.RuleResult;
+import kg.tunduk.test.senior.screeningdecisionservice.generated.rest.model.SourceVerdict;
 import kg.tunduk.test.senior.screeningdecisionservice.model.ScreeningDecisionEntity;
+
+import java.time.ZoneOffset;
+import java.util.List;
 
 public final class DecisionMapper {
 
@@ -9,22 +16,27 @@ public final class DecisionMapper {
     }
 
     public static DecisionResponse toResponse(ScreeningDecisionEntity entity) {
-        return new DecisionResponse(
+        List<RuleEvaluation> ruleResults = entity.getRuleResults().stream()
+                .map(r -> new RuleEvaluation(r.key(), RuleResult.valueOf(r.result().name()), r.points(), r.reason()))
+                .toList();
+
+        DecisionResponse response = new DecisionResponse(
                 entity.getId(),
                 entity.getCandidateId(),
-                entity.getParsedAt(),
+                entity.getParsedAt().atOffset(ZoneOffset.UTC),
                 entity.getName(),
                 entity.getEmail(),
                 entity.getPosition(),
-                entity.getSourceVerdict(),
-                entity.getDecision(),
+                SourceVerdict.valueOf(entity.getSourceVerdict().name()),
+                Decision.valueOf(entity.getDecision().name()),
                 entity.getScore(),
                 entity.getRuleSetVersion(),
-                entity.getRuleResults(),
-                entity.getDecidedAt(),
+                ruleResults,
+                entity.getDecidedAt().atOffset(ZoneOffset.UTC),
                 entity.getVersion(),
-                entity.isOverridden(),
-                entity.getOverrideReason()
+                entity.isOverridden()
         );
+        response.overrideReason(entity.getOverrideReason());
+        return response;
     }
 }

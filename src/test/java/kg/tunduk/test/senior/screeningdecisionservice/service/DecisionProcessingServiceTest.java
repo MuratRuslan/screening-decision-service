@@ -3,7 +3,7 @@ package kg.tunduk.test.senior.screeningdecisionservice.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import kg.tunduk.test.senior.screeningdecisionservice.dto.kafka.CvParsedEvent;
+import kg.tunduk.test.senior.screeningdecisionservice.generated.kafka.CvParsedEvent;
 import kg.tunduk.test.senior.screeningdecisionservice.exception.NonRetryableEventException;
 import kg.tunduk.test.senior.screeningdecisionservice.model.RuleSetEntity;
 import kg.tunduk.test.senior.screeningdecisionservice.precheck.PrecheckOrchestrator;
@@ -123,7 +123,7 @@ class DecisionProcessingServiceTest {
                 .satisfies(ex -> {
                     NonRetryableEventException nre = (NonRetryableEventException) ex;
                     assertThat(nre.getErrorCode()).isEqualTo("SCHEMA_VALIDATION_ERROR");
-                    assertThat(nre.getDetails()).anySatisfy(d -> assertThat(d.pointer()).isEqualTo("/criteria/0/key"));
+                    assertThat(nre.getDetails()).anySatisfy(d -> assertThat(d.getPointer().get()).isEqualTo("/criteria/0/key"));
                 });
         verify(decisionPersistenceService, never()).persist(any(), any(), any(), anyString(), any(), any());
     }
@@ -193,7 +193,7 @@ class DecisionProcessingServiceTest {
         ArgumentCaptor<CvParsedEvent> eventCaptor = ArgumentCaptor.forClass(CvParsedEvent.class);
         verify(decisionPersistenceService).persist(eventCaptor.capture(), any(RuleSetEntity.class),
                 any(ScoreOutcome.class), eq(criteriaCatalog.version()), any(NormalizationResult.class), any());
-        assertThat(eventCaptor.getValue().candidateId()).isEqualTo("senior-asanov-bakyt");
+        assertThat(eventCaptor.getValue().getCandidateId()).isEqualTo("senior-asanov-bakyt");
         assertThat(MDC.get("candidateId")).isEqualTo("senior-asanov-bakyt");
         assertThat(MDC.get("eventId")).isEqualTo("660e8400-e29b-41d4-a716-446655440000");
     }

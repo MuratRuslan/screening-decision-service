@@ -1,7 +1,7 @@
 package kg.tunduk.test.senior.screeningdecisionservice.service;
 
-import kg.tunduk.test.senior.screeningdecisionservice.dto.rest.DecisionOverrideRequest;
-import kg.tunduk.test.senior.screeningdecisionservice.dto.rest.DecisionResponse;
+import kg.tunduk.test.senior.screeningdecisionservice.generated.rest.model.DecisionOverrideRequest;
+import kg.tunduk.test.senior.screeningdecisionservice.generated.rest.model.DecisionResponse;
 import kg.tunduk.test.senior.screeningdecisionservice.exception.NotFoundException;
 import kg.tunduk.test.senior.screeningdecisionservice.exception.VersionConflictException;
 import kg.tunduk.test.senior.screeningdecisionservice.mapper.DecisionMapper;
@@ -57,7 +57,8 @@ public class DecisionOverrideService {
         }
 
         Decision previousDecision = decision.getDecision();
-        decision.applyOverride(request.decision(), request.reason());
+        Decision newDecision = Decision.valueOf(request.getDecision().name());
+        decision.applyOverride(newDecision, request.getReason());
 
         // Flush now (rather than waiting for commit) so Hibernate actually issues the
         // @Version UPDATE and increments decision.version in memory before we read it below
@@ -69,7 +70,7 @@ public class DecisionOverrideService {
                 overridePayload(previousDecision, request, expectedVersion), Instant.now()));
 
         log.info("Decision manually overridden decisionId={} candidateId={} previousDecision={} newDecision={} actor={}",
-                decision.getId(), decision.getCandidateId(), previousDecision, request.decision(), ACTOR);
+                decision.getId(), decision.getCandidateId(), previousDecision, newDecision, ACTOR);
 
         return DecisionMapper.toResponse(decision);
     }
@@ -77,9 +78,9 @@ public class DecisionOverrideService {
     private Map<String, Object> overridePayload(Decision previousDecision, DecisionOverrideRequest request, int expectedVersion) {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("previousDecision", previousDecision.name());
-        payload.put("newDecision", request.decision().name());
+        payload.put("newDecision", request.getDecision().name());
         payload.put("expectedVersion", expectedVersion);
-        payload.put("reason", request.reason());
+        payload.put("reason", request.getReason());
         return payload;
     }
 }

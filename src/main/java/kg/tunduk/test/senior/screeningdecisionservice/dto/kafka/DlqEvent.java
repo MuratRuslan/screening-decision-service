@@ -1,6 +1,6 @@
 package kg.tunduk.test.senior.screeningdecisionservice.dto.kafka;
 
-import kg.tunduk.test.senior.screeningdecisionservice.dto.rest.ErrorDetail;
+import kg.tunduk.test.senior.screeningdecisionservice.generated.rest.model.ErrorResponseDetailsInner;
 
 import java.time.Instant;
 import java.util.List;
@@ -14,7 +14,7 @@ public record DlqEvent(
         Object originalPayload,
         String errorCode,
         String errorMessage,
-        List<ErrorDetail> details,
+        List<ErrorResponseDetailsInner> details,
         Instant failedAt,
         String sourceTopic,
         Integer partition,

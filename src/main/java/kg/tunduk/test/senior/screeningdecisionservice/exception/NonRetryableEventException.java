@@ -1,6 +1,6 @@
 package kg.tunduk.test.senior.screeningdecisionservice.exception;
 
-import kg.tunduk.test.senior.screeningdecisionservice.dto.rest.ErrorDetail;
+import kg.tunduk.test.senior.screeningdecisionservice.generated.rest.model.ErrorResponseDetailsInner;
 
 import java.util.List;
 
@@ -12,13 +12,13 @@ import java.util.List;
 public class NonRetryableEventException extends RuntimeException {
 
     private final String errorCode;
-    private final List<ErrorDetail> details;
+    private final List<ErrorResponseDetailsInner> details;
 
     public NonRetryableEventException(String errorCode, String message) {
         this(errorCode, message, List.of());
     }
 
-    public NonRetryableEventException(String errorCode, String message, List<ErrorDetail> details) {
+    public NonRetryableEventException(String errorCode, String message, List<ErrorResponseDetailsInner> details) {
         super(message);
         this.errorCode = errorCode;
         this.details = details;
@@ -28,7 +28,7 @@ public class NonRetryableEventException extends RuntimeException {
         return errorCode;
     }
 
-    public List<ErrorDetail> getDetails() {
+    public List<ErrorResponseDetailsInner> getDetails() {
         return details;
     }
 }

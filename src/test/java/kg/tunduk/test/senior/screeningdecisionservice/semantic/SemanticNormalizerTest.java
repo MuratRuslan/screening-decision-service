@@ -1,6 +1,6 @@
 package kg.tunduk.test.senior.screeningdecisionservice.semantic;
 
-import kg.tunduk.test.senior.screeningdecisionservice.dto.kafka.CriteriaItemDto;
+import kg.tunduk.test.senior.screeningdecisionservice.generated.kafka.Criterium;
 import kg.tunduk.test.senior.screeningdecisionservice.scoring.CriterionResult;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -23,10 +23,18 @@ class SemanticNormalizerTest {
         }
     }
 
+    private static Criterium criterium(String key, String result, String comment) {
+        Criterium item = new Criterium();
+        item.setKey(key);
+        item.setResult(Criterium.Result.valueOf(result));
+        item.setComment(comment);
+        return item;
+    }
+
     @Test
     void resolvesExactCanonicalKey() {
         NormalizationResult result = SemanticNormalizer.normalize(catalog,
-                List.of(new CriteriaItemDto("java_spring", "OK", "7 лет")));
+                List.of(criterium("java_spring", "OK", "7 лет")));
 
         assertThat(result.byCanonicalKey()).containsKey("java_spring");
         assertThat(result.byCanonicalKey().get("java_spring").result()).isEqualTo(CriterionResult.OK);
@@ -36,7 +44,7 @@ class SemanticNormalizerTest {
     @Test
     void resolvesAliasToCanonicalKey() {
         NormalizationResult result = SemanticNormalizer.normalize(catalog,
-                List.of(new CriteriaItemDto("spring_boot", "PARTIAL", "базовый Spring Boot")));
+                List.of(criterium("spring_boot", "PARTIAL", "базовый Spring Boot")));
 
         assertThat(result.byCanonicalKey()).containsKey("java_spring");
         assertThat(result.byCanonicalKey().get("java_spring").canonicalKey()).isEqualTo("java_spring");
@@ -46,7 +54,7 @@ class SemanticNormalizerTest {
     @Test
     void resolutionIsCaseInsensitive() {
         NormalizationResult result = SemanticNormalizer.normalize(catalog,
-                List.of(new CriteriaItemDto("KAFKA", "OK", "продакшн Kafka")));
+                List.of(criterium("KAFKA", "OK", "продакшн Kafka")));
 
         assertThat(result.byCanonicalKey()).containsKey("kafka_reliability");
     }
@@ -54,7 +62,7 @@ class SemanticNormalizerTest {
     @Test
     void unknownKeyIsNeverSilentlyDropped() {
         NormalizationResult result = SemanticNormalizer.normalize(catalog,
-                List.of(new CriteriaItemDto("docker_kubernetes", "OK", "K8s опыт")));
+                List.of(criterium("docker_kubernetes", "OK", "K8s опыт")));
 
         assertThat(result.byCanonicalKey()).isEmpty();
         assertThat(result.hasUnmapped()).isTrue();
@@ -64,12 +72,12 @@ class SemanticNormalizerTest {
     @Test
     void normalizesMultipleCriteriaTogether() {
         NormalizationResult result = SemanticNormalizer.normalize(catalog, List.of(
-                new CriteriaItemDto("java", "OK", "Java"),
-                new CriteriaItemDto("postgresql", "PARTIAL", "Postgres"),
-                new CriteriaItemDto("dlq", "OK", "DLQ"),
-                new CriteriaItemDto("xsd", "NO", "нет SOAP"),
-                new CriteriaItemDto("grafana", "OK", "Grafana"),
-                new CriteriaItemDto("unknown_thing", "OK", "???")
+                criterium("java", "OK", "Java"),
+                criterium("postgresql", "PARTIAL", "Postgres"),
+                criterium("dlq", "OK", "DLQ"),
+                criterium("xsd", "NO", "нет SOAP"),
+                criterium("grafana", "OK", "Grafana"),
+                criterium("unknown_thing", "OK", "???")
         ));
 
         assertThat(result.byCanonicalKey().keySet())

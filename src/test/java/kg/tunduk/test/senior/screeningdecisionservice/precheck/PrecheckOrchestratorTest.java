@@ -1,6 +1,6 @@
 package kg.tunduk.test.senior.screeningdecisionservice.precheck;
 
-import kg.tunduk.test.senior.screeningdecisionservice.dto.kafka.CvParsedEvent;
+import kg.tunduk.test.senior.screeningdecisionservice.generated.kafka.CvParsedEvent;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -13,10 +13,22 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class PrecheckOrchestratorTest {
 
-    private static final CvParsedEvent EVENT = new CvParsedEvent(
-            UUID.randomUUID(), "candidate-1", Instant.now(), "Тест Тестов", "java-senior",
-            null, "test@example.com", null, null, null, null, null, null, "FIT", null,
-            List.of(), List.of(), List.of());
+    private static final CvParsedEvent EVENT = buildEvent();
+
+    private static CvParsedEvent buildEvent() {
+        CvParsedEvent event = new CvParsedEvent();
+        event.setEventId(UUID.randomUUID());
+        event.setCandidateId("candidate-1");
+        event.setParsedAt(Instant.now());
+        event.setName("Тест Тестов");
+        event.setPosition("java-senior");
+        event.setEmail("test@example.com");
+        event.setVerdict(CvParsedEvent.Verdict.FIT);
+        event.setCriteria(List.of());
+        event.setExperience(List.of());
+        event.setQuestions(List.of());
+        return event;
+    }
 
     private record SleepingCheck(String name, long sleepMs, PrecheckStatus status) implements PrecheckCheck {
         @Override

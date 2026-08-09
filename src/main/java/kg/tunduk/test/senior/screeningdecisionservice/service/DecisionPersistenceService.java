@@ -2,7 +2,7 @@ package kg.tunduk.test.senior.screeningdecisionservice.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import kg.tunduk.test.senior.screeningdecisionservice.dto.kafka.CvParsedEvent;
+import kg.tunduk.test.senior.screeningdecisionservice.generated.kafka.CvParsedEvent;
 import kg.tunduk.test.senior.screeningdecisionservice.dto.kafka.DecisionCreatedEvent;
 import kg.tunduk.test.senior.screeningdecisionservice.model.AuditAction;
 import kg.tunduk.test.senior.screeningdecisionservice.model.DecisionAuditEntity;
@@ -71,12 +71,12 @@ public class DecisionPersistenceService {
 
         ScreeningDecisionEntity decision = new ScreeningDecisionEntity(
                 UUID.randomUUID(),
-                event.candidateId(),
-                event.parsedAt(),
-                event.name(),
-                event.email(),
-                event.position(),
-                SourceVerdict.valueOf(event.verdict()),
+                event.getCandidateId(),
+                event.getParsedAt(),
+                event.getName(),
+                event.getEmail(),
+                event.getPosition(),
+                SourceVerdict.valueOf(event.getVerdict().name()),
                 outcome.decision(),
                 outcome.score(),
                 ruleSet.getVersion(),

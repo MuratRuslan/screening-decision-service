@@ -3,7 +3,7 @@ package kg.tunduk.test.senior.screeningdecisionservice.messaging.consumer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import kg.tunduk.test.senior.screeningdecisionservice.dto.kafka.DlqEvent;
-import kg.tunduk.test.senior.screeningdecisionservice.dto.rest.ErrorDetail;
+import kg.tunduk.test.senior.screeningdecisionservice.generated.rest.model.ErrorResponseDetailsInner;
 import kg.tunduk.test.senior.screeningdecisionservice.exception.NonRetryableEventException;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.junit.jupiter.api.Test;
@@ -11,6 +11,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.openapitools.jackson.nullable.JsonNullableModule;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.listener.ListenerExecutionFailedException;
 
@@ -23,7 +24,9 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MockitoExtension.class)
 class DlqPublishingRecovererTest {
 
-    private static final ObjectMapper MAPPER = new ObjectMapper().registerModule(new JavaTimeModule());
+    private static final ObjectMapper MAPPER = new ObjectMapper()
+            .registerModule(new JavaTimeModule())
+            .registerModule(new JsonNullableModule());
 
     @Mock
     private KafkaTemplate<String, String> kafkaTemplate;
@@ -35,7 +38,7 @@ class DlqPublishingRecovererTest {
     @Test
     void extractsErrorCodeAndDetailsFromWrappedNonRetryableException() throws Exception {
         NonRetryableEventException cause = new NonRetryableEventException("SCHEMA_VALIDATION_ERROR", "bad key",
-                List.of(new ErrorDetail(null, "must match pattern", "/criteria/0/key")));
+                List.of(new ErrorResponseDetailsInner().message("must match pattern").pointer("/criteria/0/key")));
         ListenerExecutionFailedException wrapped = new ListenerExecutionFailedException("listener failed", cause);
         ConsumerRecord<String, String> record = new ConsumerRecord<>("cv.parsed", 0, 42L, "candidate-1",
                 "{\"key\":\"value\"}");
@@ -49,7 +52,7 @@ class DlqPublishingRecovererTest {
         assertThat(dlqEvent.errorCode()).isEqualTo("SCHEMA_VALIDATION_ERROR");
         assertThat(dlqEvent.errorMessage()).isEqualTo("bad key");
         assertThat(dlqEvent.details()).hasSize(1);
-        assertThat(dlqEvent.details().get(0).pointer()).isEqualTo("/criteria/0/key");
+        assertThat(dlqEvent.details().get(0).getPointer().get()).isEqualTo("/criteria/0/key");
         assertThat(dlqEvent.sourceTopic()).isEqualTo("cv.parsed");
         assertThat(dlqEvent.partition()).isEqualTo(0);
         assertThat(dlqEvent.offset()).isEqualTo(42L);

@@ -1,6 +1,6 @@
 package kg.tunduk.test.senior.screeningdecisionservice.precheck;
 
-import kg.tunduk.test.senior.screeningdecisionservice.dto.kafka.CvParsedEvent;
+import kg.tunduk.test.senior.screeningdecisionservice.generated.kafka.CvParsedEvent;
 import org.springframework.stereotype.Component;
 
 import java.util.concurrent.ThreadLocalRandom;
@@ -23,7 +23,7 @@ public class DuplicateProfileCheck implements PrecheckCheck {
     public PrecheckResult run(CvParsedEvent event) {
         simulateLookupLatency();
 
-        String email = event.email() == null ? "" : event.email();
+        String email = event.getEmail() == null ? "" : event.getEmail();
         boolean looksAliased = email.contains("+");
         if (looksAliased) {
             return new PrecheckResult(name(), PrecheckStatus.WARNING,

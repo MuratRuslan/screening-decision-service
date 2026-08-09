@@ -1,6 +1,6 @@
 package kg.tunduk.test.senior.screeningdecisionservice.precheck;
 
-import kg.tunduk.test.senior.screeningdecisionservice.dto.kafka.CvParsedEvent;
+import kg.tunduk.test.senior.screeningdecisionservice.generated.kafka.CvParsedEvent;
 import org.springframework.stereotype.Component;
 
 import java.util.Locale;
@@ -23,7 +23,7 @@ public class SanctionsCheck implements PrecheckCheck {
     public PrecheckResult run(CvParsedEvent event) {
         simulateLookupLatency();
 
-        String name = event.name() == null ? "" : event.name().toLowerCase(Locale.ROOT).trim();
+        String name = event.getName() == null ? "" : event.getName().toLowerCase(Locale.ROOT).trim();
         boolean blocked = BLOCKLIST.stream().anyMatch(name::contains);
         if (blocked) {
             return new PrecheckResult(name(), PrecheckStatus.FAILED, "Имя найдено в условном списке блокировок", 0);

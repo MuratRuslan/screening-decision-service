@@ -1,6 +1,6 @@
 package kg.tunduk.test.senior.screeningdecisionservice.precheck;
 
-import kg.tunduk.test.senior.screeningdecisionservice.dto.kafka.CvParsedEvent;
+import kg.tunduk.test.senior.screeningdecisionservice.generated.kafka.CvParsedEvent;
 import kg.tunduk.test.senior.screeningdecisionservice.soap.EducationVerificationOutcome;
 import kg.tunduk.test.senior.screeningdecisionservice.soap.SoapEducationAdapter;
 import org.springframework.stereotype.Component;
@@ -22,7 +22,7 @@ public class EducationFormatCheck implements PrecheckCheck {
     @Override
     public PrecheckResult run(CvParsedEvent event) {
         EducationVerificationOutcome outcome = soapEducationAdapter.verify(
-                event.candidateId(), event.name(), event.education());
+                event.getCandidateId(), event.getName(), event.getEducation());
 
         if (!outcome.valid()) {
             String detail = outcome.errorCode() + ": " + outcome.diagnostics();

@@ -1,8 +1,8 @@
 package kg.tunduk.test.senior.screeningdecisionservice.integration;
 
 import kg.tunduk.test.senior.screeningdecisionservice.TestcontainersConfiguration;
-import kg.tunduk.test.senior.screeningdecisionservice.dto.rest.DecisionPage;
-import kg.tunduk.test.senior.screeningdecisionservice.scoring.Decision;
+import kg.tunduk.test.senior.screeningdecisionservice.generated.rest.model.Decision;
+import kg.tunduk.test.senior.screeningdecisionservice.generated.rest.model.DecisionPage;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -42,13 +42,13 @@ class DecisionQueryIT {
         assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
         DecisionPage page = response.getBody();
         assertThat(page).isNotNull();
-        assertThat(page.content()).isNotEmpty();
-        assertThat(page.content()).allSatisfy(d -> {
-            assertThat(d.position()).isEqualTo("java-senior");
-            assertThat(d.decision()).isEqualTo(Decision.AUTO_APPROVE);
+        assertThat(page.getContent()).isNotEmpty();
+        assertThat(page.getContent()).allSatisfy(d -> {
+            assertThat(d.getPosition()).isEqualTo("java-senior");
+            assertThat(d.getDecision()).isEqualTo(Decision.AUTO_APPROVE);
         });
-        for (int i = 1; i < page.content().size(); i++) {
-            assertThat(page.content().get(i - 1).score()).isGreaterThanOrEqualTo(page.content().get(i).score());
+        for (int i = 1; i < page.getContent().size(); i++) {
+            assertThat(page.getContent().get(i - 1).getScore()).isGreaterThanOrEqualTo(page.getContent().get(i).getScore());
         }
     }
 
@@ -63,8 +63,8 @@ class DecisionQueryIT {
         DecisionPage page = restTemplate.getForEntity(url, DecisionPage.class).getBody();
 
         assertThat(page).isNotNull();
-        assertThat(page.content()).isNotEmpty();
-        assertThat(page.content()).allSatisfy(d -> assertThat(d.score()).isGreaterThanOrEqualTo(90));
+        assertThat(page.getContent()).isNotEmpty();
+        assertThat(page.getContent()).allSatisfy(d -> assertThat(d.getScore()).isGreaterThanOrEqualTo(90));
     }
 
     @Test
@@ -76,8 +76,8 @@ class DecisionQueryIT {
         DecisionPage page = restTemplate.getForEntity(url, DecisionPage.class).getBody();
 
         assertThat(page).isNotNull();
-        assertThat(page.content()).isNotEmpty();
-        assertThat(page.content()).allSatisfy(d -> assertThat(d.candidateId()).contains("asanov-bakyt"));
+        assertThat(page.getContent()).isNotEmpty();
+        assertThat(page.getContent()).allSatisfy(d -> assertThat(d.getCandidateId()).contains("asanov-bakyt"));
     }
 
     @Test
@@ -91,9 +91,9 @@ class DecisionQueryIT {
         DecisionPage page = restTemplate.getForEntity(url, DecisionPage.class).getBody();
 
         assertThat(page).isNotNull();
-        assertThat(page.content()).hasSizeLessThanOrEqualTo(2);
-        assertThat(page.size()).isEqualTo(2);
-        assertThat(page.totalElements()).isGreaterThanOrEqualTo(13); // at least the V6 seed rows
+        assertThat(page.getContent()).hasSizeLessThanOrEqualTo(2);
+        assertThat(page.getSize()).isEqualTo(2);
+        assertThat(page.getTotalElements()).isGreaterThanOrEqualTo(13); // at least the V6 seed rows
     }
 
     @Test

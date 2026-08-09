@@ -1,8 +1,8 @@
 package kg.tunduk.test.senior.screeningdecisionservice.controller;
 
 import jakarta.validation.Valid;
-import kg.tunduk.test.senior.screeningdecisionservice.dto.rest.RuleSetRequest;
-import kg.tunduk.test.senior.screeningdecisionservice.dto.rest.RuleSetResponse;
+import kg.tunduk.test.senior.screeningdecisionservice.generated.rest.model.RuleSetRequest;
+import kg.tunduk.test.senior.screeningdecisionservice.generated.rest.model.RuleSetResponse;
 import kg.tunduk.test.senior.screeningdecisionservice.service.RuleSetService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;

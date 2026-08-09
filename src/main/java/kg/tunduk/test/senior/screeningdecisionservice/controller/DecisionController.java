@@ -1,10 +1,10 @@
 package kg.tunduk.test.senior.screeningdecisionservice.controller;
 
 import jakarta.validation.Valid;
-import kg.tunduk.test.senior.screeningdecisionservice.dto.rest.AuditEntryResponse;
-import kg.tunduk.test.senior.screeningdecisionservice.dto.rest.DecisionOverrideRequest;
-import kg.tunduk.test.senior.screeningdecisionservice.dto.rest.DecisionPage;
-import kg.tunduk.test.senior.screeningdecisionservice.dto.rest.DecisionResponse;
+import kg.tunduk.test.senior.screeningdecisionservice.generated.rest.model.AuditEntry;
+import kg.tunduk.test.senior.screeningdecisionservice.generated.rest.model.DecisionOverrideRequest;
+import kg.tunduk.test.senior.screeningdecisionservice.generated.rest.model.DecisionPage;
+import kg.tunduk.test.senior.screeningdecisionservice.generated.rest.model.DecisionResponse;
 import kg.tunduk.test.senior.screeningdecisionservice.model.SourceVerdict;
 import kg.tunduk.test.senior.screeningdecisionservice.scoring.Decision;
 import kg.tunduk.test.senior.screeningdecisionservice.service.DecisionOverrideService;
@@ -64,7 +64,7 @@ public class DecisionController {
     }
 
     @GetMapping("/{id}/audit")
-    public List<AuditEntryResponse> getDecisionAudit(@PathVariable UUID id) {
+    public List<AuditEntry> getDecisionAudit(@PathVariable UUID id) {
         return decisionQueryService.audit(id);
     }
 }

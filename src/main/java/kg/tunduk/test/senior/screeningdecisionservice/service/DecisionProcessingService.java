@@ -3,8 +3,8 @@ package kg.tunduk.test.senior.screeningdecisionservice.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import kg.tunduk.test.senior.screeningdecisionservice.dto.kafka.CvParsedEvent;
-import kg.tunduk.test.senior.screeningdecisionservice.dto.rest.ErrorDetail;
+import kg.tunduk.test.senior.screeningdecisionservice.generated.kafka.CvParsedEvent;
+import kg.tunduk.test.senior.screeningdecisionservice.generated.rest.model.ErrorResponseDetailsInner;
 import kg.tunduk.test.senior.screeningdecisionservice.exception.NonRetryableEventException;
 import kg.tunduk.test.senior.screeningdecisionservice.model.RuleSetEntity;
 import kg.tunduk.test.senior.screeningdecisionservice.precheck.PrecheckOrchestrator;
@@ -70,21 +70,21 @@ public class DecisionProcessingService {
         validateAgainstSchema(node);
 
         CvParsedEvent event = databind(node);
-        MDC.put("eventId", String.valueOf(event.eventId()));
-        MDC.put("candidateId", event.candidateId());
+        MDC.put("eventId", String.valueOf(event.getEventId()));
+        MDC.put("candidateId", event.getCandidateId());
         log.info("Consumed cv.parsed event candidateId={} position={} parsedAt={}",
-                event.candidateId(), event.position(), event.parsedAt());
+                event.getCandidateId(), event.getPosition(), event.getParsedAt());
 
-        NormalizationResult normalization = SemanticNormalizer.normalize(criteriaCatalog, event.criteria());
+        NormalizationResult normalization = SemanticNormalizer.normalize(criteriaCatalog, event.getCriteria());
         if (normalization.hasUnmapped() && unknownKeyPolicy == UnknownKeyPolicy.DLQ) {
             throw new NonRetryableEventException("UNKNOWN_CRITERION_KEY",
                     "Неизвестные ключи критериев: " + normalization.unmapped());
         }
 
         RuleSetEntity ruleSetEntity = ruleSetRepository
-                .findFirstByPositionAndActiveFromLessThanEqualOrderByActiveFromDesc(event.position(), Instant.now())
+                .findFirstByPositionAndActiveFromLessThanEqualOrderByActiveFromDesc(event.getPosition(), Instant.now())
                 .orElseThrow(() -> new NonRetryableEventException("RULE_SET_NOT_FOUND",
-                        "Активный rule-set для позиции '" + event.position() + "' не найден"));
+                        "Активный rule-set для позиции '" + event.getPosition() + "' не найден"));
 
         RuleSet ruleSet = toDomain(ruleSetEntity);
         ScoreOutcome outcome = ScoreCalculator.calculate(ruleSet, normalization.byCanonicalKey());
@@ -92,15 +92,15 @@ public class DecisionProcessingService {
         List<PrecheckResult> precheckResults = precheckOrchestrator.runAll(event);
         precheckResults.forEach(r -> log.info(
                 "Precheck completed candidateId={} check={} status={} durationMs={} detail={}",
-                event.candidateId(), r.name(), r.status(), r.durationMs(), r.detail()));
+                event.getCandidateId(), r.name(), r.status(), r.durationMs(), r.detail()));
 
         try {
             decisionPersistenceService.persist(event, ruleSetEntity, outcome, criteriaCatalog.version(),
                     normalization, precheckResults);
             log.info("Decision created candidateId={} decision={} score={} ruleSetVersion={}",
-                    event.candidateId(), outcome.decision(), outcome.score(), ruleSetEntity.getVersion());
+                    event.getCandidateId(), outcome.decision(), outcome.score(), ruleSetEntity.getVersion());
         } catch (DataIntegrityViolationException e) {
-            log.info("Duplicate event ignored candidateId={} parsedAt={}", event.candidateId(), event.parsedAt());
+            log.info("Duplicate event ignored candidateId={} parsedAt={}", event.getCandidateId(), event.getParsedAt());
         }
     }
 
@@ -118,8 +118,8 @@ public class DecisionProcessingService {
     private void validateAgainstSchema(JsonNode node) {
         List<JsonPointerError> errors = schemaValidator.validate(node);
         if (!errors.isEmpty()) {
-            List<ErrorDetail> details = errors.stream()
-                    .map(e -> new ErrorDetail(null, e.message(), e.pointer()))
+            List<ErrorResponseDetailsInner> details = errors.stream()
+                    .map(e -> new ErrorResponseDetailsInner().message(e.message()).pointer(e.pointer()))
                     .toList();
             String message = errors.stream()
                     .map(e -> e.pointer() + ": " + e.message())
