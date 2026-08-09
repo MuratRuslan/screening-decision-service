@@ -69,7 +69,7 @@ class ScoreCalculatorTest {
 
         ScoreOutcome outcome = ScoreCalculator.calculate(JAVA_SENIOR_V1, criteria);
 
-        // 25*0.5 + 20*0.5 + 25*0.5 + 15*0.5 + 15*0.5 = 50.0, floored once
+        // 25*0.5 + 20*0.5 + 25*0.5 + 15*0.5 + 15*0.5 = 50.0, округление вниз один раз
         assertThat(outcome.score()).isEqualTo(50);
         assertThat(outcome.decision()).isEqualTo(Decision.NEEDS_REVIEW);
         assertThat(outcome.ruleResults()).allSatisfy(r -> assertThat(r.result()).isEqualTo(RuleResult.WARN));
@@ -81,7 +81,7 @@ class ScoreCalculatorTest {
                 "java_spring", ok("java_spring", "7 лет"),
                 "postgres_acid", ok("postgres_acid", "ACID"),
                 "kafka_reliability", ok("kafka_reliability", "DLQ")
-                // "contracts" and "observability" absent from the incoming event
+                // "contracts" и "observability" отсутствуют во входящем событии
         );
 
         ScoreOutcome outcome = ScoreCalculator.calculate(JAVA_SENIOR_V1, criteria);

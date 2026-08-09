@@ -11,20 +11,20 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 /**
- * Polls outbox_events and publishes NEW rows to Kafka. Claim (SELECT ... FOR UPDATE SKIP
- * LOCKED) and send-and-mark run inside a single transaction per poll: the claiming
- * transaction's row locks are what makes SKIP LOCKED work as a real claim, so splitting the
- * send into a separate REQUIRES_NEW transaction per row would make that second transaction
- * block on the very locks the first one is still holding. The trade-off is that a slow
- * Kafka send holds the batch's row locks a little longer - acceptable at this batch size/
- * poll interval, and documented in the ADR alongside the resulting at-least-once delivery
- * semantics (a crash between the broker ack and this transaction's commit means the row is
- * still NEW on restart and gets sent again; the stable eventId lets downstream consumers
- * dedupe).
+ * Опрашивает outbox_events и публикует строки NEW в Kafka. Захват (SELECT ... FOR UPDATE SKIP
+ * LOCKED) и отправка-с-пометкой выполняются в одной транзакции за проход: именно блокировки
+ * строк захватывающей транзакции делают SKIP LOCKED реальным захватом, поэтому вынос отправки
+ * в отдельную транзакцию REQUIRES_NEW для каждой строки заставил бы вторую транзакцию
+ * блокироваться на тех же блокировках, которые всё ещё держит первая. Компромисс в том, что
+ * медленная отправка в Kafka чуть дольше держит блокировки строк батча - при таком размере
+ * батча и интервале опроса это приемлемо, и задокументировано в ADR вместе с итоговой
+ * семантикой at-least-once (если сбой произойдёт между ack брокера и коммитом этой транзакции,
+ * строка после рестарта останется NEW и будет отправлена повторно; стабильный eventId
+ * позволяет потребителям на другой стороне делать дедупликацию).
  * <p>
- * {@code fixedDelay} (not {@code fixedRate}) ensures ticks never overlap - the simplest
- * form of backpressure: a slow Kafka broker naturally throttles the poll rate instead of
- * piling up concurrent batches.
+ * {@code fixedDelay} (а не {@code fixedRate}) гарантирует, что тики никогда не пересекаются -
+ * это самая простая форма backpressure: медленный брокер Kafka естественным образом
+ * замедляет частоту опроса вместо накопления параллельных батчей.
  */
 @Component
 public class OutboxPublisher {
@@ -65,7 +65,7 @@ public class OutboxPublisher {
                         event.getId(), event.getTopic(), event.getRetryCount(), e.getMessage());
             }
         }
-        // Entities were loaded (and locked) inside this same transaction, so the field
-        // mutations above are flushed to the DB automatically at commit - no explicit save().
+        // Сущности были загружены (и заблокированы) в этой же транзакции, поэтому
+        // изменения полей выше автоматически сохранятся в БД при коммите - явный save() не нужен.
     }
 }

@@ -27,10 +27,10 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * A separate bean (not a method on {@link DecisionProcessingService}) so its
- * {@code @Transactional} boundary goes through the Spring proxy even when called from
- * another bean in the same package - self-invocation would silently bypass the proxy and
- * the transactional/flush-then-catch idempotency mechanism would not work.
+ * Отдельный бин (не метод в {@link DecisionProcessingService}), чтобы его граница
+ * {@code @Transactional} проходила через прокси Spring даже при вызове из другого бина
+ * того же пакета - самовызов молча обошёл бы прокси, и механизм идемпотентности
+ * flush-then-catch перестал бы работать.
  */
 @Service
 public class DecisionPersistenceService {
@@ -57,11 +57,11 @@ public class DecisionPersistenceService {
     }
 
     /**
-     * Persists the decision, its CREATED audit entry and the outbox event atomically.
-     * The decision insert is flushed immediately so a duplicate
-     * {@code (candidate_id, parsed_at)} surfaces as a {@code DataIntegrityViolationException}
-     * here rather than at commit - the caller is expected to catch it and treat it as
-     * "duplicate ignored", not an error.
+     * Атомарно сохраняет решение, его запись аудита CREATED и событие outbox.
+     * Вставка решения флашится немедленно, чтобы дубликат
+     * {@code (candidate_id, parsed_at)} проявился как {@code DataIntegrityViolationException}
+     * здесь, а не при коммите - вызывающий код должен поймать это исключение и
+     * трактовать как "дубликат проигнорирован", а не как ошибку.
      */
     @Transactional
     public UUID persist(CvParsedEvent event, RuleSetEntity ruleSet, ScoreOutcome outcome,

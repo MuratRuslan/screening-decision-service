@@ -14,12 +14,12 @@ import org.springframework.web.util.UriComponentsBuilder;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Exercises GET /decisions filter/sort/pagination combinations against the V5-V7 seed data.
- * Assertions are property-based (score thresholds, sort order, filter membership) rather
- * than exact row counts, since other IT classes in the same suite (CvParsedFlowIT, DlqIT,
- * OverrideIT) may share the cached Spring context / Testcontainers instances and add or
- * mutate rows - this test must not depend on execution order relative to those. Requires
- * Docker.
+ * Проверяет комбинации фильтров/сортировки/пагинации GET /decisions на seed-данных V5-V7.
+ * Проверки основаны на свойствах (пороги score, порядок сортировки, принадлежность фильтру),
+ * а не на точном числе строк, так как другие IT-классы в этом же наборе (CvParsedFlowIT, DlqIT,
+ * OverrideIT) могут использовать общий кэшированный Spring-контекст / Testcontainers и
+ * добавлять или менять строки - этот тест не должен зависеть от порядка выполнения относительно них.
+ * Требует Docker.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Import(TestcontainersConfiguration.class)
@@ -93,7 +93,7 @@ class DecisionQueryIT {
         assertThat(page).isNotNull();
         assertThat(page.getContent()).hasSizeLessThanOrEqualTo(2);
         assertThat(page.getSize()).isEqualTo(2);
-        assertThat(page.getTotalElements()).isGreaterThanOrEqualTo(13); // at least the V6 seed rows
+        assertThat(page.getTotalElements()).isGreaterThanOrEqualTo(13); // как минимум строки seed из V6
     }
 
     @Test

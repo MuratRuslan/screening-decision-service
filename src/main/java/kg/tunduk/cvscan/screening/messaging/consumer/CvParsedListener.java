@@ -17,9 +17,9 @@ public class CvParsedListener {
     }
 
     /**
-     * Consumes the raw payload as a String (needed so schema validation runs against the raw
-     * JSON before databinding - see {@link DecisionProcessingService#parseAndValidate}), then
-     * hands the typed, already-validated {@link CvParsedEvent} on to the business pipeline.
+     * Принимает сырой payload как String (нужно, чтобы валидация схемы шла по исходному
+     * JSON до databinding - см. {@link DecisionProcessingService#parseAndValidate}), затем
+     * передаёт типизированный, уже провалидированный {@link CvParsedEvent} в бизнес-пайплайн.
      */
     @KafkaListener(topics = "${app.kafka.topics.cv-parsed}", groupId = "${spring.kafka.consumer.group-id}")
     public void onMessage(ConsumerRecord<String, String> record) {

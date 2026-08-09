@@ -13,9 +13,9 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * Immutable, in-memory view of {@code semantic/criteria-catalog.json}: a canonical id per
- * criterion plus the synonym aliases that resolve to it. Pure Java (only Jackson for
- * parsing) so it can be built directly in tests without a Spring context.
+ * Неизменяемое представление {@code semantic/criteria-catalog.json} в памяти: канонический id
+ * для каждого критерия и алиасы-синонимы, которые к нему ведут. Чистая Java (Jackson только
+ * для парсинга), поэтому можно собрать прямо в тестах без контекста Spring.
  */
 public record CriteriaCatalog(String version, Map<String, String> aliasToCanonicalId, Set<String> canonicalIds) {
 
@@ -40,7 +40,7 @@ public record CriteriaCatalog(String version, Map<String, String> aliasToCanonic
         return new CriteriaCatalog(version, Map.copyOf(aliasToCanonicalId), Set.copyOf(canonicalIds));
     }
 
-    /** Resolves a raw (possibly alias) criterion key to its canonical catalog id. */
+    /** Преобразует сырой (возможно, алиасный) ключ критерия в канонический id каталога. */
     public Optional<String> resolve(String rawKey) {
         if (rawKey == null) {
             return Optional.empty();

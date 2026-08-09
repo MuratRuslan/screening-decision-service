@@ -1,9 +1,9 @@
 # Screening Decision Service
 
-Kafka-driven microservice that consumes parsed-resume events (`cv.parsed`), scores a
-candidate against the active rule-set for their position, persists the decision, and
-publishes the result (`screening.decision.created`) via a transactional outbox. Exposes a
-REST API for rule-sets, decisions, and manual override.
+Микросервис на Kafka, который потребляет события распарсенных резюме (`cv.parsed`),
+оценивает кандидата по активному набору правил для его позиции, сохраняет решение и
+публикует результат (`screening.decision.created`) через транзакционный outbox. Предоставляет
+REST API для наборов правил, решений и ручного переопределения.
 
 ```
 cv-parser  →  [Kafka: cv.parsed]  →  screening-decision-service  →  [Kafka: screening.decision.created]  →  candidate-service
@@ -11,75 +11,75 @@ cv-parser  →  [Kafka: cv.parsed]  →  screening-decision-service  →  [Kafka
                                       └→ [Kafka: screening.decision.dlq]
 ```
 
-Built for the `java-senior` take-home task in [`java-senior/TASK.md`](java-senior/TASK.md).
-That folder (contract OpenAPI/JSON Schema/XSD, semantic catalog, sample events) is the
-fixed, authoritative contract and is **not modified** by this implementation — the app
-copies those files into `src/main/resources` at build time and loads them from the
-classpath, so the built jar is self-contained. `ContractResourcesConsistencyTest` fails
-the build if the copies ever drift from the originals.
+Реализовано для тестового задания `java-senior` из [`java-senior/TASK.md`](java-senior/TASK.md).
+Эта папка (контракт OpenAPI/JSON Schema/XSD, семантический каталог, примеры событий) — это
+фиксированный, авторитетный контракт, который **не изменяется** данной реализацией — приложение
+копирует эти файлы в `src/main/resources` во время сборки и загружает их из classpath, поэтому
+собранный jar самодостаточен. `ContractResourcesConsistencyTest` роняет сборку, если копии
+когда-либо расходятся с оригиналами.
 
-## Stack
+## Стек
 
-Java 21 (virtual threads), Spring Boot 3.5.3 (Web, Data JPA, Validation, Kafka, Actuator),
+Java 21 (виртуальные потоки), Spring Boot 3.5.3 (Web, Data JPA, Validation, Kafka, Actuator),
 PostgreSQL, Apache Kafka, Flyway, Gradle, JUnit 5 + Mockito, Testcontainers, springdoc
-OpenAPI, Micrometer/Prometheus, `com.networknt:json-schema-validator`. No SOAP framework
-and no JAXB — see [§ SOAP/XML adapter](#soapxml-education-adapter).
+OpenAPI, Micrometer/Prometheus, `com.networknt:json-schema-validator`. Без SOAP-фреймворка
+и без JAXB — см. [§ SOAP/XML-адаптер](#soapxml-адаптер-для-образования).
 
-**Deviation from the scaffold, documented up front:** the Spring Initializr-generated
-project this was built from pinned Spring Boot **4.1.0** with non-standard/preview
-artifact ids. TASK.md's stated stack is "Spring Boot 3.x", so the build was deliberately
-downgraded to **3.5.3** with the real, standard artifact ids
-(`spring-boot-starter-web`, `spring-boot-starter-data-jpa`, `spring-kafka`,
-`flyway-core`, ...). `ext['testcontainers.version'] = '2.0.5'` in `build.gradle` pins
-Testcontainers explicitly, since Boot 3.5.3's managed BOM would otherwise resolve an
-older 1.x line incompatible with the already-present `TestcontainersConfiguration`
-(`org.testcontainers.kafka.KafkaContainer` / `org.testcontainers.postgresql.PostgreSQLContainer`
-package layout).
+**Отклонение от исходного шаблона, задокументированное заранее:** проект, сгенерированный
+Spring Initializr, на основе которого это было построено, фиксировал Spring Boot **4.1.0** с
+нестандартными/preview идентификаторами артефактов. В TASK.md заявленный стек — «Spring Boot
+3.x», поэтому сборка была намеренно понижена до **3.5.3** с реальными, стандартными
+идентификаторами артефактов (`spring-boot-starter-web`, `spring-boot-starter-data-jpa`,
+`spring-kafka`, `flyway-core`, ...). `ext['testcontainers.version'] = '2.0.5'` в `build.gradle`
+явно фиксирует версию Testcontainers, поскольку управляемый BOM Boot 3.5.3 иначе разрешил бы
+более старую ветку 1.x, несовместимую с уже присутствующей `TestcontainersConfiguration`
+(структура пакетов `org.testcontainers.kafka.KafkaContainer` /
+`org.testcontainers.postgresql.PostgreSQLContainer`).
 
-## Contract-first code generation
+## Генерация кода по контракту (contract-first)
 
-REST and Kafka DTOs are generated at build time, not hand-written, so the contract files
-are the single source of truth for wire shapes:
+DTO для REST и Kafka генерируются во время сборки, а не пишутся вручную, поэтому файлы
+контракта являются единственным источником истины для форматов передачи данных:
 
-- **OpenAPI Generator** (`org.openapi.generator`, generator `spring`) reads
-  `java-senior/contract/openapi.yaml` and generates **models only** (`globalProperties =
-  [models: ""]` — no API interfaces/controllers, which stay hand-written) into
+- **OpenAPI Generator** (`org.openapi.generator`, генератор `spring`) читает
+  `java-senior/contract/openapi.yaml` и генерирует **только модели** (`globalProperties =
+  [models: ""]` — без API-интерфейсов/контроллеров, которые остаются написанными вручную) в
   `build/generated/openapi/.../generated.rest.model`. `RuleSetRequest`, `RuleSetResponse`,
   `DecisionResponse`, `DecisionPage`, `DecisionOverrideRequest`, `AuditEntry`,
-  `ErrorResponse` (+ its inline details item, `ErrorResponseDetailsInner`), and the
-  `Decision`/`SourceVerdict`/`RuleResult`/`AuditAction` enums all come from here, already
-  carrying the contract's Bean Validation annotations (`@NotNull`, `@Pattern`, `@Min`/`@Max`,
-  `@Size`) for `@Valid @RequestBody` binding. Optional+nullable contract fields (e.g.
+  `ErrorResponse` (+ вложенный элемент деталей `ErrorResponseDetailsInner`), а также перечисления
+  `Decision`/`SourceVerdict`/`RuleResult`/`AuditAction` — всё это приходит отсюда, уже неся
+  аннотации Bean Validation из контракта (`@NotNull`, `@Pattern`, `@Min`/`@Max`, `@Size`) для
+  привязки `@Valid @RequestBody`. Опциональные+nullable поля контракта (например,
   `ErrorResponse.details`, `DecisionResponse.overrideReason`, `AuditEntry.payload`)
-  generate as `JsonNullable<T>` (absent vs. explicit null vs. present) - `JacksonConfig`
-  registers the `JsonNullableModule` bean so Spring's ObjectMapper (de)serializes it
-  correctly instead of as a raw wrapper object.
-- **jsonschema2pojo** (`org.jsonschema2pojo`) reads
-  `java-senior/contract/json-schema/cv-parsed.schema.json` and generates the `cv.parsed`
-  event POJO (`CvParsedEvent`, with nested `Criterium`/`Experience`/`Verdict`/`Result`
-  types) into `build/generated/jsonschema2pojo/.../generated.kafka`, configured with
-  `dateTimeType = java.time.Instant` so date-time fields need no `OffsetDateTime`
-  conversion.
+  генерируются как `JsonNullable<T>` (отсутствует / явный null / присутствует) — `JacksonConfig`
+  регистрирует бин `JsonNullableModule`, чтобы ObjectMapper Spring (де)сериализовал его
+  корректно, а не как обычный объект-обёртку.
+- **jsonschema2pojo** (`org.jsonschema2pojo`) читает
+  `java-senior/contract/json-schema/cv-parsed.schema.json` и генерирует POJO для события
+  `cv.parsed` (`CvParsedEvent`, с вложенными типами `Criterium`/`Experience`/`Verdict`/`Result`)
+  в `build/generated/jsonschema2pojo/.../generated.kafka`, настроенный с `dateTimeType =
+  java.time.Instant`, чтобы поля даты-времени не требовали конвертации в `OffsetDateTime`.
 
-Both point directly at `java-senior/contract/` (never at the `src/main/resources` runtime
-copies), so regenerating after a contract change is automatic on the next build - no
-manual sync step, and no way for the generated types to drift from the fixed contract.
+Оба генератора указывают напрямую на `java-senior/contract/` (никогда на runtime-копии в
+`src/main/resources`), поэтому регенерация после изменения контракта происходит автоматически
+при следующей сборке — без ручной синхронизации и без возможности расхождения сгенерированных
+типов с фиксированным контрактом.
 
-**Domain/persistence types stay hand-written and separate from the generated REST/Kafka
-types on purpose.** `scoring.CriterionWeight`, `scoring.RuleEvaluation`, `scoring.Decision`,
-`model.SourceVerdict`, `model.AuditAction` etc. are used for JPA entity mapping (including
-direct JSONB serialization via Hibernate's `@JdbcTypeCode(SqlTypes.JSON)`) and for the pure
-`ScoreCalculator` logic; the REST layer's generated enums/records share the same constant
-names (they come from the same contract) but are a distinct set of classes. `mapper/`
-(`RuleSetMapper`, `DecisionMapper`, `AuditMapper`) converts between the two at the
-controller boundary - regenerating the OpenAPI/JSON Schema models can never silently change
-what gets persisted or how scoring works, and vice versa.
+**Типы домена/персистентности намеренно остаются написанными вручную и отделены от
+сгенерированных типов REST/Kafka.** `scoring.CriterionWeight`, `scoring.RuleEvaluation`,
+`scoring.Decision`, `model.SourceVerdict`, `model.AuditAction` и т.д. используются для маппинга
+JPA-сущностей (включая прямую сериализацию в JSONB через `@JdbcTypeCode(SqlTypes.JSON)` в
+Hibernate) и для чистой логики `ScoreCalculator`; сгенерированные перечисления/записи REST-слоя
+используют те же имена констант (они происходят из того же контракта), но являются отдельным
+набором классов. `mapper/` (`RuleSetMapper`, `DecisionMapper`, `AuditMapper`) конвертирует между
+этими двумя наборами на границе контроллера — регенерация моделей OpenAPI/JSON Schema никогда
+не может незаметно изменить то, что сохраняется, или то, как работает скоринг, и наоборот.
 
-## Running locally
+## Запуск локально
 
 ```bash
-docker compose up -d          # Postgres 16 + single-node Kafka (KRaft, port 9092)
-./gradlew bootRun             # applies Flyway migrations on startup
+docker compose up -d          # Postgres 16 + Kafka из одного узла (KRaft, порт 9092)
+./gradlew bootRun             # применяет миграции Flyway при старте
 ```
 
 - Swagger UI: `http://localhost:8080/swagger-ui.html`
@@ -88,11 +88,11 @@ docker compose up -d          # Postgres 16 + single-node Kafka (KRaft, port 909
 - Prometheus: `http://localhost:8080/actuator/prometheus`
 
 ```bash
-./gradlew build     # compile + full test suite
-./gradlew test      # tests only
+./gradlew build     # компиляция + полный набор тестов
+./gradlew test      # только тесты
 ```
 
-Publish the manual test events (from `java-senior/test-events/`) with `kcat`:
+Публикация тестовых событий вручную (из `java-senior/test-events/`) с помощью `kcat`:
 
 ```bash
 printf '%s\n' "$(tr -d '\n' < java-senior/test-events/cv-parsed-sample.json)" \
@@ -101,233 +101,241 @@ printf '%s\n' "$(tr -d '\n' < java-senior/test-events/cv-parsed-sample.json)" \
 kcat -P -b localhost:9092 -t cv.parsed -l java-senior/test-events/cv-parsed-bulk.ndjson
 ```
 
-`cv-parsed-bulk.ndjson` has 6 valid unique candidates, 1 row that fails JSON Schema
-validation (empty `name`, invalid `email` — routed to `screening.decision.dlq` with JSON
-Pointer diagnostics), and 1 exact duplicate of the first row (same `candidateId` +
-`parsedAt` — silently ignored, no second decision or second `screening.decision.created`).
+В `cv-parsed-bulk.ndjson` 6 валидных уникальных кандидатов, 1 строка, не проходящая валидацию
+JSON Schema (пустое `name`, некорректный `email` — отправляется в `screening.decision.dlq` с
+диагностикой в формате JSON Pointer), и 1 точный дубликат первой строки (тот же `candidateId` +
+`parsedAt` — молча игнорируется, без второго решения и без второго
+`screening.decision.created`).
 
-> **Verified with Docker:** this implementation was originally built in a sandbox without
-> Docker (only the 68 Docker-independent unit tests could run there). It has since been
-> re-verified with Docker available: `./gradlew test` passes **79/79**, including all five
-> Testcontainers integration test classes and the app's own context-load test against real
-> Postgres and Kafka. `docker compose up -d && ./gradlew bootRun` was also run directly —
-> publishing the sample event produced a decision, an outbox row that reached `SENT`, and a
-> real `screening.decision.created` message on the broker with a matching `decisionId`/
-> `score`; `/actuator/health` and `/actuator/prometheus` responded correctly.
+> **Проверено с Docker:** изначально эта реализация была построена в песочнице без Docker (там
+> могли выполняться только 68 unit-тестов, не зависящих от Docker). С тех пор она была повторно
+> проверена с доступным Docker: `./gradlew test` проходит **79 из 79**, включая все пять классов
+> интеграционных тестов на Testcontainers и собственный тест загрузки контекста приложения на
+> реальных Postgres и Kafka. `docker compose up -d && ./gradlew bootRun` также был запущен
+> напрямую — публикация тестового события произвела решение, строку outbox, дошедшую до статуса
+> `SENT`, и реальное сообщение `screening.decision.created` в брокере с совпадающими
+> `decisionId`/`score`; `/actuator/health` и `/actuator/prometheus` отвечали корректно.
 >
-> Three real bugs were caught by this end-to-end verification and are now fixed:
-> 1. The V6 seed migration used the wrong JSON enum values for `RuleEvaluation.result`
->    (`NO`/`PARTIAL`, copied from the unrelated `CriterionResult` enum, instead of
->    `RuleResult`'s actual `FAIL`/`WARN`) — this crashed JSON deserialization for 11 of the
->    13 seeded decisions the moment they were read back via JPA.
-> 2. `PATCH /override`'s response showed the *pre*-override `version` because the entity's
->    in-memory `@Version` field only updates once Hibernate actually flushes the UPDATE,
->    which by default happens at transaction commit — after the response DTO had already
->    been built. Fixed by flushing explicitly before building the response.
-> 3. `docker-compose.yml`'s Kafka service used a dual-listener config that the official
->    `apache/kafka` image rejected at startup (`advertised.listeners` ended up containing
->    the non-routable `0.0.0.0`); replaced with the simpler single-listener KRaft pattern
->    from Kafka's own quickstart compose example.
+> В ходе этой сквозной проверки были найдены и теперь исправлены три реальных бага:
+> 1. Миграция-сид V6 использовала неверные значения JSON-перечисления для
+>    `RuleEvaluation.result` (`NO`/`PARTIAL`, скопированные из не связанного с этим перечисления
+>    `CriterionResult`, вместо реальных `FAIL`/`WARN` из `RuleResult`) — это ломало
+>    JSON-десериализацию для 11 из 13 засеянных решений сразу при их чтении через JPA.
+> 2. Ответ `PATCH /override` показывал *предыдущую* (до переопределения) `version`, потому что
+>    поле `@Version` сущности в памяти обновляется только когда Hibernate реально сбрасывает
+>    (flush) UPDATE, что по умолчанию происходит при коммите транзакции — уже после того, как
+>    DTO ответа был построен. Исправлено явным flush перед построением ответа.
+> 3. Сервис Kafka в `docker-compose.yml` использовал конфигурацию с двумя listener'ами, которую
+>    официальный образ `apache/kafka` отклонял при старте (`advertised.listeners` в итоге
+>    содержал немаршрутизируемый `0.0.0.0`); заменено на более простую схему с одним listener'ом
+>    в стиле KRaft из официального quickstart-примера compose для Kafka.
 
-`kafka-console-producer.sh`/`.bat` work too — note it sends each **line** of stdin as a
-separate message, so multi-line pretty-printed JSON must be collapsed to one line first
-(exactly what the `tr -d '\n'` above does); skipping that turns one valid event into many
-garbage ones. The service handles that gracefully either way (every malformed line lands
-in the DLQ individually, without stalling the partition), but it's not what you want for a
-manual smoke test.
+`kafka-console-producer.sh`/`.bat` тоже подходят — но учтите, что он отправляет каждую **строку**
+stdin как отдельное сообщение, поэтому многострочный отформатированный JSON нужно сначала
+схлопнуть в одну строку (именно это делает `tr -d '\n'` выше); если пропустить этот шаг, одно
+валидное событие превратится во множество мусорных. Сервис в любом случае обрабатывает это
+корректно (каждая некорректная строка попадает в DLQ по отдельности, не блокируя партицию), но
+это не то, что нужно для ручного smoke-теста.
 
-## Configuration
+## Конфигурация
 
-All Kafka topic names and `bootstrap-servers` come only from properties (`application.yml`
-/ env), never hardcoded, per TASK.md.
+Все имена топиков Kafka и `bootstrap-servers` берутся только из свойств (`application.yml` /
+переменные окружения), никогда не хардкодятся — согласно TASK.md.
 
 | Property | Meaning | Default |
 |---|---|---|
-| `spring.kafka.bootstrap-servers` | Kafka bootstrap | `localhost:9092` |
-| `app.kafka.topics.cv-parsed` / `decision-created` / `decision-dlq` | Topic names | `cv.parsed` / `screening.decision.created` / `screening.decision.dlq` |
-| `app.kafka.consumer.retry.*` | Exponential backoff for transient consumer errors | 500ms initial, ×2, capped at 5s, gives up after 30s |
-| `app.outbox.poll-interval-ms` / `batch-size` / `send-timeout-ms` | Outbox publisher tick, claim batch size, per-send timeout | 1000 / 50 / 5000 |
-| `app.precheck.max-concurrent-calls` | Semaphore permits bounding concurrent precheck "calls" | 8 |
-| `app.precheck.timeout-ms` | Per-check timeout | 2000 |
-| `app.semantic.unknown-key-policy` | `AUDIT` (default, continue + record) or `DLQ` (reject whole event) | `AUDIT` |
+| `spring.kafka.bootstrap-servers` | Bootstrap-адрес Kafka | `localhost:9092` |
+| `app.kafka.topics.cv-parsed` / `decision-created` / `decision-dlq` | Имена топиков | `cv.parsed` / `screening.decision.created` / `screening.decision.dlq` |
+| `app.kafka.consumer.retry.*` | Экспоненциальный backoff для временных ошибок консьюмера | 500мс начально, ×2, ограничение 5с, отказ после 30с |
+| `app.outbox.poll-interval-ms` / `batch-size` / `send-timeout-ms` | Интервал тика паблишера outbox, размер батча захвата, таймаут на отправку | 1000 / 50 / 5000 |
+| `app.precheck.max-concurrent-calls` | Разрешения семафора, ограничивающие количество параллельных "вызовов" precheck | 8 |
+| `app.precheck.timeout-ms` | Таймаут на одну проверку | 2000 |
+| `app.semantic.unknown-key-policy` | `AUDIT` (по умолчанию, продолжить + записать) или `DLQ` (отклонить всё событие) | `AUDIT` |
 
-## Architecture & key decisions
+## Архитектура и ключевые решения
 
-Full detail in [`docs/ADR-001.md`](docs/ADR-001.md). Summary:
+Полные детали в [`docs/ADR-001.md`](docs/ADR-001.md). Кратко:
 
-### Idempotency
+### Идемпотентность
 
-`screening_decisions(candidate_id, parsed_at)` has a **unique DB constraint** — this, not
-an application-level `exists()` check, is the actual idempotency guard, because it's the
-only thing that's safe across concurrent consumer replicas (an exists-then-insert check
-has a race window between the two statements). The consumer inserts the decision and
-**flushes immediately** so a duplicate surfaces as a `DataIntegrityViolationException`
-right there; the caller catches it, logs "duplicate ignored", and returns — no audit row,
-no outbox row, no error. Only on success are the audit row and outbox row written, in the
-same transaction as the decision insert.
+На `screening_decisions(candidate_id, parsed_at)` установлено **уникальное ограничение БД** —
+именно оно, а не проверка `exists()` на уровне приложения, является реальной защитой
+идемпотентности, потому что только оно безопасно при работе нескольких реплик консьюмера
+одновременно (проверка exists-затем-insert имеет окно гонки между двумя операторами). Консьюмер
+вставляет решение и **сразу же делает flush**, поэтому дубликат тут же проявляется как
+`DataIntegrityViolationException`; вызывающий код перехватывает это, логирует "дубликат
+проигнорирован" и завершает работу — без строки аудита, без строки outbox, без ошибки. Только
+при успехе записываются строка аудита и строка outbox, в той же транзакции, что и вставка
+решения.
 
-### Retry & DLQ
+### Retry и DLQ
 
-Transient errors (DB/Kafka connectivity blips) retry with `ExponentialBackOff` (bounded by
-`max-elapsed-time-ms`) via Spring Kafka's `DefaultErrorHandler` — blocking/synchronous
-retry, not a separate retry-topic pipeline, which is enough for this scope. Validation and
-business errors (`NonRetryableEventException`: malformed JSON, JSON Schema violations,
-unknown rule-set, optionally unknown criterion keys) are registered as non-retryable and
-skip straight to recovery. Both paths funnel through one `DlqPublishingRecoverer`,
-guaranteeing a uniform DLQ envelope (`originalPayload`, `errorCode`, `errorMessage`,
-`details[]` with JSON Pointers where applicable, `failedAt`, `sourceTopic`, `partition`,
-`offset`) and guaranteeing a bad message never blocks the next one on the partition.
+Временные ошибки (сбои подключения к БД/Kafka) повторяются с `ExponentialBackOff` (ограничено
+`max-elapsed-time-ms`) через `DefaultErrorHandler` Spring Kafka — блокирующий/синхронный retry, а
+не отдельный конвейер retry-топика, чего достаточно для данного объёма задачи. Ошибки валидации
+и бизнес-ошибки (`NonRetryableEventException`: некорректный JSON, нарушения JSON Schema,
+неизвестный набор правил, опционально — неизвестные ключи критериев) зарегистрированы как
+неповторяемые и сразу переходят к восстановлению (recovery). Оба пути сходятся в одном
+`DlqPublishingRecoverer`, гарантируя единообразный конверт DLQ (`originalPayload`, `errorCode`,
+`errorMessage`, `details[]` с JSON Pointer там, где применимо, `failedAt`, `sourceTopic`,
+`partition`, `offset`) и гарантируя, что плохое сообщение никогда не заблокирует следующее в
+партиции.
 
-### Transactional outbox
+### Транзакционный outbox
 
-Decision insert + `CREATED` audit insert + `NEW` outbox insert are one DB transaction.
-`OutboxPublisher` claims a batch with a native `SELECT ... FOR UPDATE SKIP LOCKED` query
-(safe for multiple app instances) and sends each row **inside that same claiming
-transaction** — see the ADR for why a separate `REQUIRES_NEW` transaction per row would
-actually create a lock/deadlock risk instead of being "more correct". Delivery is
-**at-least-once**: a crash between the Kafka ack and the transaction commit re-sends the
-row on the next poll; the event's stable `eventId` is what lets a downstream consumer
-dedupe.
+Вставка решения + вставка аудита `CREATED` + вставка outbox со статусом `NEW` — это одна
+транзакция БД. `OutboxPublisher` захватывает батч нативным запросом `SELECT ... FOR UPDATE SKIP
+LOCKED` (безопасно при нескольких экземплярах приложения) и отправляет каждую строку **внутри
+той же транзакции захвата** — почему отдельная транзакция `REQUIRES_NEW` на строку на самом деле
+создала бы риск блокировок/дедлоков, а не была бы «более правильной», см. в ADR. Доставка —
+**at-least-once**: сбой между подтверждением Kafka и коммитом транзакции приведёт к повторной
+отправке строки на следующем опросе; стабильный `eventId` события — это то, что позволяет
+downstream-консьюмеру дедуплицировать.
 
-### Concurrent manual override
+### Конкурентное ручное переопределение
 
-`PATCH /decisions/{id}/override` checks concurrency twice: an explicit comparison against
-the `expectedVersion` header (gives the exact contract-format `409 VERSION_CONFLICT`
-message for the common "stale client" case), and JPA's own `@Version` column on
-`ScreeningDecisionEntity` (real `WHERE id=? AND version=?` compare-and-swap at commit,
-closing the race for two genuinely concurrent requests). Both map to the same 409.
+`PATCH /decisions/{id}/override` проверяет конкурентность дважды: явное сравнение с заголовком
+`expectedVersion` (даёт точное сообщение `409 VERSION_CONFLICT` в формате контракта для типичного
+случая "устаревший клиент"), и собственная колонка `@Version` JPA на `ScreeningDecisionEntity`
+(реальное сравнение-и-замена `WHERE id=? AND version=?` при коммите, закрывающее гонку для двух
+действительно конкурентных запросов). Оба случая маппятся на один и тот же 409.
 
-### Semantic catalog
+### Семантический каталог
 
-`semantic/criteria-catalog.json` (`version: "2026.06"`) maps synonym aliases to canonical
-criterion ids. Incoming `criteria[].key` values are normalized through it before scoring;
-rule-sets may only reference canonical ids (`POST /rule-sets` returns 400 if not). An
-unmapped key is **never silently dropped** — by default (`AUDIT` policy) it's recorded in
-`decision_audit.payload.unmappedCriteria` and processing continues; `DLQ` policy instead
-routes the whole event to the DLQ with `errorCode=UNKNOWN_CRITERION_KEY`. The catalog
-version used at scoring time is persisted on the decision and the `CREATED` audit payload.
+`semantic/criteria-catalog.json` (`version: "2026.06"`) отображает синонимичные алиасы на
+канонические id критериев. Входящие значения `criteria[].key` нормализуются через него перед
+скорингом; наборы правил могут ссылаться только на канонические id (`POST /rule-sets` возвращает
+400, если нет). Немаппированный ключ **никогда не отбрасывается молча** — по умолчанию (политика
+`AUDIT`) он записывается в `decision_audit.payload.unmappedCriteria`, и обработка продолжается;
+политика `DLQ` вместо этого направляет всё событие в DLQ с `errorCode=UNKNOWN_CRITERION_KEY`.
+Версия каталога, использованная во время скоринга, сохраняется в решении и в payload аудита
+`CREATED`.
 
-**Catalog evolution:** adding new ids/aliases is safe and non-breaking. Renaming or
-removing an existing canonical id is a breaking change — add a new id instead and keep the
-old one valid, so rule-sets and historical decisions referencing it don't need retroactive
-migration.
+**Эволюция каталога:** добавление новых id/алиасов безопасно и не ломает совместимость.
+Переименование или удаление существующего канонического id — это breaking change; вместо этого
+следует добавить новый id и оставить старый действительным, чтобы наборы правил и исторические
+решения, ссылающиеся на него, не требовали ретроактивной миграции.
 
-### Virtual threads for prechecks
+### Виртуальные потоки для prechecks
 
-Three simulated I/O checks (`duplicate-profile-check`, `sanctions-check`,
-`education-format-check` — the last one goes through the [SOAP/XML adapter](#soapxml-education-adapter))
-run in parallel on a dedicated `Executors.newVirtualThreadPerTaskExecutor()` bean, each
-wrapped in its own `CompletableFuture.orTimeout(...)` so one slow check can't block
-collecting the others. Concurrency toward the *simulated external dependency* is bounded
-by a `Semaphore` (`app.precheck.max-concurrent-calls`), **not** by the executor: virtual
-threads are cheap to create by the thousand, so limiting their count wouldn't actually
-protect anything — the real bottleneck is the dependency's own capacity. Crucially,
-`Semaphore.acquire()` parks a virtual thread without pinning its carrier, unlike a
-`synchronized` block (deliberately not used anywhere in this path). Results land in the
-`CREATED` audit payload's `checks[]` field, not in `ruleResults` — TASK.md allows either,
-and injecting synthetic rows into `ruleResults` would blur its rule-set-criterion
-semantics.
+Три симулированные проверки I/O (`duplicate-profile-check`, `sanctions-check`,
+`education-format-check` — последняя проходит через [SOAP/XML-адаптер](#soapxml-адаптер-для-образования))
+выполняются параллельно на выделенном бине `Executors.newVirtualThreadPerTaskExecutor()`, каждая
+обёрнута в собственный `CompletableFuture.orTimeout(...)`, чтобы одна медленная проверка не могла
+заблокировать сбор остальных. Конкурентность по отношению к *симулируемой внешней зависимости*
+ограничена `Semaphore` (`app.precheck.max-concurrent-calls`), а **не** экзекьютором: виртуальные
+потоки дёшево создавать тысячами, поэтому ограничение их количества на самом деле ничего бы не
+защищало — реальное узкое место — это собственная ёмкость зависимости. Важно, что
+`Semaphore.acquire()` паркует виртуальный поток, не закрепляя (pinning) его поток-носитель, в
+отличие от блока `synchronized` (намеренно не используется нигде на этом пути). Результаты
+попадают в поле `checks[]` payload аудита `CREATED`, а не в `ruleResults` — TASK.md допускает оба
+варианта, а вставка синтетических строк в `ruleResults` размыла бы его семантику
+"правило-критерий".
 
-**Where virtual threads don't help** (and this codebase deliberately doesn't lean on them
-for): CPU-bound work — `ScoreCalculator` runs on the calling thread, never dispatched to
-the virtual-thread executor, because virtual threads only help when a thread is *blocked*,
-not when it's *computing*. `synchronized` blocks and native/JNI calls pin the carrier
-thread, defeating the point — none appear in the precheck path. Connection-pool limits:
-HikariCP's `maximum-pool-size` is still the real ceiling on concurrent DB work regardless
-of how many virtual threads are launched; spinning up thousands of them just means
-thousands *queue* for a connection rather than bypassing the pool. Kafka partition count
-similarly bounds real consumer parallelism no matter the thread model, and per-candidate
-ordering isn't guaranteed across partitions — which is fine here because idempotency is
-enforced by the DB constraint, not by message ordering.
+**Где виртуальные потоки не помогают** (и эта кодовая база намеренно на них здесь не полагается):
+CPU-bound работа — `ScoreCalculator` выполняется в вызывающем потоке, никогда не отправляется в
+экзекьютор виртуальных потоков, потому что виртуальные потоки помогают только когда поток
+*заблокирован*, а не когда он *вычисляет*. Блоки `synchronized` и вызовы native/JNI закрепляют
+поток-носитель, сводя на нет весь смысл — их нет на пути prechecks. Ограничения пула соединений:
+`maximum-pool-size` HikariCP всё равно остаётся реальным потолком для конкурентной работы с БД
+независимо от того, сколько виртуальных потоков запущено; запуск тысяч из них просто означает,
+что тысячи *встают в очередь* за соединением, а не обходят пул. Количество партиций Kafka
+аналогично ограничивает реальный параллелизм консьюмера независимо от модели потоков, и порядок
+по кандидату не гарантируется между партициями — что здесь нормально, поскольку идемпотентность
+обеспечивается ограничением БД, а не порядком сообщений.
 
-### SOAP/XML education adapter
+### SOAP/XML-адаптер для образования
 
-`contract/soap/education-verification.xsd` defines two trivial complex types. A full SOAP
-stack (WSDL, envelope handling, Spring-WS/CXF) would be substantial added complexity for
-near-zero benefit, and TASK.md itself says a real external service isn't required. Instead:
-`EducationVerificationXmlCodec` marshals/unmarshals by hand via DOM (proper escaping, no
-string concatenation — no JAXB either, since the JDK's DOM/SAX/`javax.xml.validation` APIs
-are already sufficient for a schema this small and JAXB was removed from the JDK).
-`EducationVerificationXsdValidator` runs a schema-validating SAX parse pairing an
-`ErrorHandler` with a `ContentHandler` that tracks the open-element stack, so violations
-get a best-effort element path (documented as "path, not true XPath" — a real XPath engine
-is unjustified at this scope) rather than just a line/column number.
-`EducationVerificationStub` stands in for the real external service and genuinely
-round-trips XML *strings* (not domain objects), so the codec/validator path is exercised
-the way a real remote call would be. `SoapEducationAdapter` validates both the outbound
-request and the inbound response against the XSD and never throws past its own boundary —
-every failure becomes a result the precheck orchestrator can report.
+`contract/soap/education-verification.xsd` определяет два тривиальных сложных типа. Полноценный
+стек SOAP (WSDL, обработка конверта, Spring-WS/CXF) стал бы существенной дополнительной
+сложностью почти без пользы, и сам TASK.md говорит, что реальный внешний сервис не требуется.
+Вместо этого: `EducationVerificationXmlCodec` маршалит/анмаршалит вручную через DOM (правильное
+экранирование, без конкатенации строк — и без JAXB, поскольку API JDK DOM/SAX/
+`javax.xml.validation` уже достаточны для такой небольшой схемы, а JAXB был удалён из JDK).
+`EducationVerificationXsdValidator` выполняет SAX-парсинг с валидацией по схеме, сочетая
+`ErrorHandler` с `ContentHandler`, который отслеживает стек открытых элементов, поэтому
+нарушения получают приближённый путь элемента (задокументированный как "путь, а не настоящий
+XPath" — полноценный движок XPath не оправдан для такого объёма задачи), а не просто номер
+строки/столбца. `EducationVerificationStub` подменяет реальный внешний сервис и по-настоящему
+делает round-trip XML-*строк* (а не доменных объектов), поэтому путь кодек/валидатор
+проверяется так же, как это происходило бы при реальном удалённом вызове. `SoapEducationAdapter`
+валидирует и исходящий запрос, и входящий ответ по XSD и никогда не выбрасывает исключение за
+пределы собственной границы — каждый сбой становится результатом, который оркестратор prechecks
+может отобразить.
 
-### OpenTelemetry tracing
+### Трассировка OpenTelemetry
 
-Distributed tracing is wired via Micrometer Tracing's OTel bridge
-(`micrometer-tracing-bridge-otel` + `opentelemetry-exporter-otlp`), not a hand-rolled
-integration: Spring MVC request handling and, via
-`spring.kafka.listener.observation-enabled` / `spring.kafka.template.observation-enabled`,
-every `@KafkaListener` invocation and `KafkaTemplate.send()` automatically become spans
-through Spring's Observation API. `observability.Spans` is a small null-safe helper that
-tags whichever span is currently active with business attributes the auto-instrumentation
-doesn't know about — `candidateId`, `eventId`, `position`, `decisionId`, `decision` in
-`DecisionProcessingService`, `decisionId` in `DecisionOverrideService`, and `kafka.topic`/
-`kafka.key` in `DecisionEventProducer` — so a trace for one `cv.parsed` event is
-searchable by the same fields already used in structured logs. The log pattern also
-includes `traceId`/`spanId` (`%X{traceId:-}`/`%X{spanId:-}`) so log lines and traces
-correlate even without a UI, and `management.tracing.sampling.probability=1.0` traces
-everything for this demo scope (a real deployment would tune this down or move to
-tail-based sampling).
+Распределённая трассировка подключена через OTel-мост Micrometer Tracing
+(`micrometer-tracing-bridge-otel` + `opentelemetry-exporter-otlp`), а не через самописную
+интеграцию: обработка запросов Spring MVC и, благодаря
+`spring.kafka.listener.observation-enabled` / `spring.kafka.template.observation-enabled`, каждый
+вызов `@KafkaListener` и `KafkaTemplate.send()` автоматически становятся спанами через
+Observation API Spring. `observability.Spans` — небольшой null-safe хелпер, который помечает
+текущий активный спан бизнес-атрибутами, о которых авто-инструментация не знает — `candidateId`,
+`eventId`, `position`, `decisionId`, `decision` в `DecisionProcessingService`, `decisionId` в
+`DecisionOverrideService`, и `kafka.topic`/`kafka.key` в `DecisionEventProducer` — поэтому трейс
+для одного события `cv.parsed` можно найти по тем же полям, что уже используются в структурных
+логах. Шаблон логов также включает `traceId`/`spanId` (`%X{traceId:-}`/`%X{spanId:-}`), поэтому
+строки логов и трейсы коррелируют даже без UI, а `management.tracing.sampling.probability=1.0`
+трассирует всё для масштаба данной демонстрации (в реальном деплое это стоило бы уменьшить или
+перейти на tail-based сэмплирование).
 
-No tracing backend is bundled — TASK.md explicitly excludes requiring a full distributed-
-tracing server. `management.otlp.tracing.endpoint` points at the standard OTLP/HTTP port
-(`http://localhost:4318/v1/traces`); with nothing listening there, the OTel SDK's batch
-span processor just logs failed-export warnings in the background and never blocks
-request/consumer processing. Point it at any OTLP-compatible collector (Jaeger, Grafana
-Tempo, an OTel Collector) to actually view traces, e.g. run Jaeger locally with
-`docker run -d -p 16686:16686 -p 4318:4318 jaegertracing/all-in-one:latest` and browse
+Бэкенд для трассировки не поставляется в комплекте — TASK.md явно исключает требование полного
+сервера распределённой трассировки. `management.otlp.tracing.endpoint` указывает на стандартный
+порт OTLP/HTTP (`http://localhost:4318/v1/traces`); если там никто не слушает, пакетный
+процессор спанов OTel SDK просто логирует предупреждения о неудачном экспорте в фоне и никогда не
+блокирует обработку запросов/сообщений консьюмером. Направьте его на любой OTLP-совместимый
+коллектор (Jaeger, Grafana Tempo, OTel Collector), чтобы реально увидеть трейсы, например,
+запустите Jaeger локально с помощью
+`docker run -d -p 16686:16686 -p 4318:4318 jaegertracing/all-in-one:latest` и откройте
 `http://localhost:16686`.
 
-## Contract ambiguities recorded
+## Зафиксированные неоднозначности контракта
 
-- `AuditAction.UPDATED_BY_REPLAY` exists in the OpenAPI contract's enum but nothing in
-  TASK.md's requirements currently produces it. It's mapped for schema completeness but
-  never emitted — reserved for a hypothetical future "recompute" admin endpoint.
-- "Latest decision" for `GET /decisions/by-candidate/{candidateId}` is
-  `ORDER BY decided_at DESC LIMIT 1`. Multiple decisions per candidate are legitimate
-  (different `parsedAt` re-screenings share a `candidateId` but not a `(candidateId, parsedAt)`
-  pair), so "latest" is defined by decision time, not by uniqueness of the candidate.
-- The semantic catalog version is persisted on the decision (`semantic_catalog_version`
-  column) and in the `CREATED` audit payload, but deliberately **not** added to
-  `DecisionResponse` JSON — the contract's response field list is fixed and TASK.md says
-  not to add fields.
+- `AuditAction.UPDATED_BY_REPLAY` присутствует в перечислении контракта OpenAPI, но ничто в
+  требованиях TASK.md на данный момент его не производит. Он замаплен для полноты схемы, но
+  никогда не эмитится — зарезервирован для гипотетического будущего admin-эндпоинта
+  "пересчитать".
+- "Последнее решение" для `GET /decisions/by-candidate/{candidateId}` определяется как
+  `ORDER BY decided_at DESC LIMIT 1`. Несколько решений на одного кандидата — это легитимная
+  ситуация (разные повторные скрининги с разным `parsedAt` разделяют `candidateId`, но не пару
+  `(candidateId, parsedAt)`), поэтому "последнее" определяется временем решения, а не
+  уникальностью кандидата.
+- Версия семантического каталога сохраняется в решении (колонка `semantic_catalog_version`) и в
+  payload аудита `CREATED`, но намеренно **не** добавлена в `DecisionResponse` JSON — список
+  полей ответа в контракте фиксирован, и TASK.md говорит не добавлять поля.
 
-## Testing
+## Тестирование
 
-Unit tests (JUnit 5 + Mockito + AssertJ, no Spring context except where noted) cover: score
-calculation (OK/PARTIAL/NO, missing criteria, both threshold boundaries inclusive, weight-
-sum clamping), rule-set active-selection by `activeFrom`, semantic normalization (alias/
-case-insensitive resolution, unknown-key handling), JSON Schema validation (valid sample +
-hand-crafted invalid payloads, JSON Pointer assertions), the full consumer pipeline
-(malformed/blank JSON, schema violations, unknown-criterion-key under both policies,
-missing rule-set, successful persist with MDC assertions, duplicate-event exception
-swallowing), DLQ envelope construction, outbox publishing (empty batch, success, failure/
-retry-count, one failure not blocking the batch), XSD validation and the SOAP adapter's
-heuristic branches, precheck parallelism/timeout/partial-failure/semaphore-serialization,
-rule-set creation (duplicate, unknown-canonical-key), and decision override
-(version-match/stale-version/not-found).
+Unit-тесты (JUnit 5 + Mockito + AssertJ, без Spring-контекста, кроме отмеченных случаев)
+покрывают: расчёт скоринга (OK/PARTIAL/NO, отсутствующие критерии, обе границы порога включительно,
+ограничение суммы весов), выбор активного набора правил по `activeFrom`, семантическую
+нормализацию (разрешение алиасов/регистронезависимость, обработку неизвестных ключей), валидацию
+JSON Schema (валидный пример + вручную составленные невалидные payload'ы, проверки JSON Pointer),
+полный конвейер консьюмера (некорректный/пустой JSON, нарушения схемы, неизвестный ключ критерия
+при обеих политиках, отсутствующий набор правил, успешное сохранение с проверками MDC, поглощение
+исключения для дублирующегося события), построение конверта DLQ, публикацию outbox (пустой батч,
+успех, сбой/счётчик повторов, один сбой, не блокирующий весь батч), валидацию XSD и
+эвристические ветки SOAP-адаптера, параллелизм/таймаут/частичный сбой/сериализацию через семафор
+для prechecks, создание набора правил (дубликат, неизвестный канонический ключ), и переопределение
+решения (совпадение версии/устаревшая версия/не найдено).
 
-Integration tests (`src/test/.../integration/`, Testcontainers with **real** Postgres and
-Kafka via the existing `TestcontainersConfiguration`) cover the end-to-end flows described
-in TASK.md — see that package for the current list. These require Docker; all pass — see
-the verification note above.
+Интеграционные тесты (`src/test/.../integration/`, Testcontainers с **реальными** Postgres и
+Kafka через существующую `TestcontainersConfiguration`) покрывают сквозные сценарии, описанные в
+TASK.md — актуальный список см. в этом пакете. Для них требуется Docker; все проходят — см.
+примечание о проверке выше.
 
-## What wasn't done / known limitations
+## Что не сделано / известные ограничения
 
-- No k6 load-testing script (listed as a bonus item; skipped for time).
-- No `@EntityGraph`/explicit fetch-graph tuning — the entity graph here is shallow enough
-  (no collection associations between the three main entities) that N+1 isn't a real risk
-  in the current query set.
-- Batch outbox publishing exists (claim size bounded by `app.outbox.batch-size`,
-  non-overlapping `fixedDelay` scheduling as backpressure) but there's no adaptive
-  backoff on batch size under sustained backlog beyond that.
-- Structured JSON logging (e.g. `logstash-logback-encoder`) wasn't added — logs are
-  pattern-formatted text with MDC fields, sufficient for `grep candidateId=X` but not for
-  direct ingestion into a log aggregator's JSON pipeline without a Logback layout change.
+- Отсутствует скрипт нагрузочного тестирования на k6 (указан как бонусный пункт; пропущен ради
+  экономии времени).
+- Отсутствует настройка `@EntityGraph`/явных графов выборки — граф сущностей здесь достаточно
+  неглубокий (нет коллекционных ассоциаций между тремя основными сущностями), чтобы проблема N+1
+  представляла реальный риск в текущем наборе запросов.
+- Батчевая публикация outbox реализована (размер захвата ограничен `app.outbox.batch-size`,
+  неперекрывающееся планирование `fixedDelay` как backpressure), но адаптивного backoff по
+  размеру батча при устойчивом накоплении очереди сверх этого нет.
+- Структурированное логирование в JSON (например, `logstash-logback-encoder`) не добавлено — логи
+  представляют собой текст, форматированный по шаблону, с полями MDC, чего достаточно для
+  `grep candidateId=X`, но не для прямого приёма в JSON-конвейер агрегатора логов без изменения
+  Logback-layout.

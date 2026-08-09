@@ -1,8 +1,8 @@
 package kg.tunduk.cvscan.screening.scoring;
 
 /**
- * {@code key} is always a canonical criterion id (already normalized through the
- * semantic catalog) — the scoring engine never sees raw/alias keys.
+ * {@code key} всегда является каноническим id критерия (уже нормализован через
+ * семантический каталог) — движок скоринга никогда не видит сырые/алиасные ключи.
  */
 public record CriterionWeight(String key, int weight) {
 }

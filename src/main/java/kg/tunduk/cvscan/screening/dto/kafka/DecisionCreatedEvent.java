@@ -5,7 +5,7 @@ import kg.tunduk.cvscan.screening.scoring.Decision;
 import java.time.Instant;
 import java.util.UUID;
 
-/** Published to {@code screening.decision.created} after a decision is durably persisted. */
+/** Публикуется в {@code screening.decision.created} после того, как решение сохранено. */
 public record DecisionCreatedEvent(
         UUID eventId,
         UUID decisionId,

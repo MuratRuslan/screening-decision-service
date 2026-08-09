@@ -5,9 +5,9 @@ import kg.tunduk.cvscan.screening.generated.rest.model.ErrorResponseDetailsInner
 import java.util.List;
 
 /**
- * A {@code cv.parsed} event that is structurally or semantically invalid and will never
- * succeed no matter how many times it is retried - registered with the Kafka error handler
- * as non-retryable so it skips straight to the DLQ recoverer instead of wasting retry attempts.
+ * Событие {@code cv.parsed}, которое структурно или семантически некорректно и никогда не
+ * обработается успешно, сколько бы раз его ни повторяли - зарегистрировано в Kafka error
+ * handler как non-retryable, чтобы сразу уходить в DLQ recoverer, не тратя попытки retry.
  */
 public class NonRetryableEventException extends RuntimeException {
 

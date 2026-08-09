@@ -11,9 +11,9 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Builds a single {@link Specification} combining every non-null filter, so
- * {@code GET /decisions} compiles to one SQL query with the filtering done by
- * Postgres (WHERE/ORDER BY/LIMIT/OFFSET), never in application memory.
+ * Собирает единый {@link Specification} из всех непустых фильтров, чтобы
+ * {@code GET /decisions} превращался в один SQL-запрос, а фильтрация выполнялась
+ * Postgres (WHERE/ORDER BY/LIMIT/OFFSET), а не в памяти приложения.
  */
 public final class ScreeningDecisionSpecifications {
 

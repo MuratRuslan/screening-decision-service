@@ -5,8 +5,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Pure, side-effect-free scoring engine. Deliberately has zero Spring/JPA imports so it
- * can be unit-tested without a Spring context.
+ * Чистый движок скоринга без побочных эффектов. Специально не имеет импортов Spring/JPA,
+ * чтобы его можно было тестировать без контекста Spring.
  */
 public final class ScoreCalculator {
 
@@ -17,9 +17,9 @@ public final class ScoreCalculator {
     }
 
     /**
-     * @param byCanonicalKey criteria from the incoming event, already normalized to
-     *                       canonical keys via the semantic catalog. A rule-set criterion
-     *                       with no matching entry is treated as {@link CriterionResult#NO}.
+     * @param byCanonicalKey критерии из входящего события, уже нормализованные до
+     *                       канонических ключей через семантический каталог. Критерий
+     *                       rule-set без соответствующей записи считается {@link CriterionResult#NO}.
      */
     public static ScoreOutcome calculate(RuleSet ruleSet, Map<String, NormalizedCriterion> byCanonicalKey) {
         List<RuleEvaluation> evaluations = new ArrayList<>(ruleSet.weights().size());

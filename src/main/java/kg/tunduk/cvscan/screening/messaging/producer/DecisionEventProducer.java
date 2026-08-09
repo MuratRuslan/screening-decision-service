@@ -10,10 +10,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
- * The only place allowed to publish business events to Kafka - business code never calls
- * KafkaTemplate directly, it only ever writes an outbox row; {@link
- * kg.tunduk.cvscan.screening.outbox.OutboxPublisher} is this class's
- * sole caller.
+ * Единственное место, которому разрешено публиковать бизнес-события в Kafka - бизнес-код
+ * никогда не вызывает KafkaTemplate напрямую, он только пишет строку в outbox; {@link
+ * kg.tunduk.cvscan.screening.outbox.OutboxPublisher} - единственный
+ * вызывающий этот класс.
  */
 @Component
 public class DecisionEventProducer {
@@ -26,7 +26,7 @@ public class DecisionEventProducer {
         this.tracer = tracer;
     }
 
-    /** Sends synchronously, blocking up to {@code timeoutMs} for the broker ack. */
+    /** Отправляет синхронно, блокируясь до {@code timeoutMs} в ожидании подтверждения от брокера. */
     public void send(String topic, String key, String payload, long timeoutMs) {
         Spans.tag(tracer, "kafka.topic", topic);
         Spans.tag(tracer, "kafka.key", key);

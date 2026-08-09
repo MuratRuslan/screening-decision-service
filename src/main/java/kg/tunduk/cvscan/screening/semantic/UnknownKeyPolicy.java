@@ -1,13 +1,14 @@
 package kg.tunduk.cvscan.screening.semantic;
 
 /**
- * What to do with a {@code criteria[].key} that the semantic catalog has no alias for.
- * Configured via {@code app.semantic.unknown-key-policy}, applied by the consumer pipeline
- * (an unrelated unknown criterion should not by default block an otherwise valid screening).
+ * Что делать с {@code criteria[].key}, для которого в семантическом каталоге нет алиаса.
+ * Настраивается через {@code app.semantic.unknown-key-policy}, применяется пайплайном
+ * консьюмера (посторонний неизвестный критерий по умолчанию не должен блокировать иначе
+ * валидный скрининг).
  */
 public enum UnknownKeyPolicy {
-    /** Record unmapped keys into the audit payload and continue processing (default). */
+    /** Записать неизвестные ключи в payload аудита и продолжить обработку (по умолчанию). */
     AUDIT,
-    /** Route the whole event to the DLQ with errorCode=UNKNOWN_CRITERION_KEY. */
+    /** Отправить всё событие в DLQ с errorCode=UNKNOWN_CRITERION_KEY. */
     DLQ
 }

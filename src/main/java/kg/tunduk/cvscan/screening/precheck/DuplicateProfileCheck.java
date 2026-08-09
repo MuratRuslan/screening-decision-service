@@ -6,10 +6,10 @@ import org.springframework.stereotype.Component;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * Simulates an external lookup for a similar existing candidate profile by email/phone.
- * No real duplicate-profile store exists for this task; the "positive" case is triggered by
- * a `+`-aliased email (a common real-world dedupe signal, e.g. name+tag@domain), purely so
- * the WARNING branch is exercisable in tests and manual demos.
+ * Имитирует внешний поиск похожего существующего профиля кандидата по email/телефону.
+ * Реального хранилища дублей профилей в этой задаче нет; "положительный" случай срабатывает
+ * на email с `+`-алиасом (частый в реальности сигнал дублирования, например name+tag@domain) -
+ * просто чтобы ветку WARNING можно было проверить в тестах и демо.
  */
 @Component
 public class DuplicateProfileCheck implements PrecheckCheck {

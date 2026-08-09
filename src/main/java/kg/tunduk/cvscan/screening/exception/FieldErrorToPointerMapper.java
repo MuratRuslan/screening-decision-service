@@ -1,6 +1,6 @@
 package kg.tunduk.cvscan.screening.exception;
 
-/** Converts Spring's dotted/bracketed Bean Validation field paths (e.g. {@code weights[0].key}) into JSON Pointers. */
+/** Преобразует пути полей Bean Validation с точками/скобками (например, {@code weights[0].key}) в JSON Pointer. */
 public final class FieldErrorToPointerMapper {
 
     private FieldErrorToPointerMapper() {

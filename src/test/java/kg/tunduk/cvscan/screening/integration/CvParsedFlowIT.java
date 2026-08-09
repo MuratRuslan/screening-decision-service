@@ -24,9 +24,9 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * End-to-end: a valid cv.parsed event produces a decision, an outbox row that transitions
- * to SENT, and an actual screening.decision.created message on the broker. Requires Docker
- * (real Postgres + Kafka via Testcontainers) - see README's sandbox note.
+ * End-to-end: валидное событие cv.parsed создаёт решение, запись outbox переходит
+ * в SENT, и в брокер реально уходит сообщение screening.decision.created. Требует Docker
+ * (настоящие Postgres + Kafka через Testcontainers) - см. заметку про sandbox в README.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @Import(TestcontainersConfiguration.class)
@@ -100,10 +100,10 @@ class CvParsedFlowIT {
         KafkaTestSupport.awaitUntil(20_000, () ->
                 assertThat(decisionRepository.findFirstByCandidateIdOrderByDecidedAtDesc(candidateId)).isPresent());
 
-        // Re-publish the exact same event (same candidateId + parsedAt).
+        // Публикуем то же самое событие повторно (тот же candidateId + parsedAt).
         kafkaTemplate.send(cvParsedTopic, candidateId, json).get(10, java.util.concurrent.TimeUnit.SECONDS);
 
-        // Give the duplicate a chance to be (incorrectly) processed, then assert it wasn't.
+        // Даём дубликату шанс быть (ошибочно) обработанным, затем проверяем, что этого не случилось.
         Thread.sleep(5_000);
         long count = decisionRepository.findAll().stream()
                 .filter(d -> d.getCandidateId().equals(candidateId))

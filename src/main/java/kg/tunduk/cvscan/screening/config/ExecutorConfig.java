@@ -10,11 +10,11 @@ import java.util.concurrent.Executors;
 public class ExecutorConfig {
 
     /**
-     * Dedicated to prechecks only (not reused as a general {@code @Async} pool) so its
-     * purpose and load are easy to reason about and test in isolation. Spring infers
-     * {@code close()} as the destroy method for {@code @Bean}-declared {@link
-     * AutoCloseable}s, so this shuts down cleanly on context close - {@code
-     * ExecutorService.close()} (Java 19+) shuts down and awaits termination.
+     * Используется только для прекheck'ов (не переиспользуется как общий пул {@code @Async}),
+     * чтобы назначение и нагрузку было легко понимать и тестировать отдельно. Spring сам
+     * определяет {@code close()} как destroy-метод для {@code @Bean}, реализующих {@link
+     * AutoCloseable}, поэтому пул корректно останавливается при закрытии контекста - {@code
+     * ExecutorService.close()} (Java 19+) останавливает и дожидается завершения.
      */
     @Bean(name = "precheckExecutor")
     public ExecutorService precheckExecutor() {

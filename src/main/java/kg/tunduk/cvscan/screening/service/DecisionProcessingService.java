@@ -33,11 +33,10 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Orchestrates the full cv.parsed -> decision pipeline: JSON Schema validation, semantic
- * normalization, rule-set selection, scoring, and atomic persistence. Deliberately not
- * itself {@code @Transactional} - only {@link DecisionPersistenceService#persist} is,
- * so the duplicate-insert exception it can throw is catchable here after the transaction
- * has already unwound.
+ * Оркестрирует весь пайплайн cv.parsed -> decision: валидацию по JSON Schema, семантическую
+ * нормализацию, выбор rule-set, скоринг и атомарное сохранение. Сам сознательно не
+ * {@code @Transactional} - таковым является только {@link DecisionPersistenceService#persist},
+ * поэтому исключение о дубликате вставки можно поймать здесь уже после отката транзакции.
  */
 @Service
 public class DecisionProcessingService {
@@ -72,22 +71,22 @@ public class DecisionProcessingService {
     }
 
     /**
-     * Convenience entry point for callers that only have the raw Kafka payload (e.g. tests).
-     * {@link kg.tunduk.cvscan.screening.messaging.consumer.CvParsedListener}
-     * calls {@link #parseAndValidate} and {@link #process(CvParsedEvent)} separately instead,
-     * so it can log/inspect the typed event before handing it off.
+     * Удобная точка входа для вызывающих, у которых есть только сырой payload Kafka
+     * (например, тесты). {@link kg.tunduk.cvscan.screening.messaging.consumer.CvParsedListener}
+     * вместо этого вызывает {@link #parseAndValidate} и {@link #process(CvParsedEvent)}
+     * отдельно, чтобы залогировать/проверить типизированное событие перед обработкой.
      */
     public void process(String rawPayload) {
         process(parseAndValidate(rawPayload));
     }
 
     /**
-     * Parses the raw payload and validates it against the JSON Schema - deliberately kept on
-     * the raw {@link JsonNode}, before any databinding, since that is what gives schema
-     * violations a precise JSON Pointer (e.g. {@code /criteria/0/key}); a generic Kafka
-     * JsonDeserializer bound straight to {@link CvParsedEvent} would skip this check entirely
-     * and only catch structural JSON errors, not contract violations like a bad email format
-     * or an out-of-pattern criterion key.
+     * Парсит сырой payload и валидирует его по JSON Schema - намеренно на уровне сырого
+     * {@link JsonNode}, до databinding, потому что именно это даёт нарушениям схемы точный
+     * JSON Pointer (например, {@code /criteria/0/key}); обычный Kafka JsonDeserializer,
+     * привязанный напрямую к {@link CvParsedEvent}, полностью пропустил бы эту проверку и
+     * ловил бы только структурные ошибки JSON, а не нарушения контракта вроде неверного
+     * формата email или ключа критерия не по шаблону.
      */
     public CvParsedEvent parseAndValidate(String rawPayload) {
         JsonNode node = parseJson(rawPayload);
@@ -164,8 +163,8 @@ public class DecisionProcessingService {
         try {
             return objectMapper.treeToValue(node, CvParsedEvent.class);
         } catch (JsonProcessingException e) {
-            // Should not happen once schema validation has passed, but guards against a
-            // schema/DTO drift bug rather than crashing the consumer thread.
+            // Не должно происходить после успешной валидации по схеме, но это подстраховка
+            // от рассинхронизации схемы и DTO вместо падения потока консьюмера.
             throw new NonRetryableEventException("MALFORMED_JSON", "Не удалось разобрать событие: " + e.getOriginalMessage());
         }
     }

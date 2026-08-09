@@ -7,11 +7,11 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 
-/** Simulates checking the candidate's name against a conditional sanctions/blocklist. */
+/** Имитирует проверку имени кандидата по условному списку санкций/блокировок. */
 @Component
 public class SanctionsCheck implements PrecheckCheck {
 
-    /** A placeholder in-memory blocklist - a real integration would call an external registry. */
+    /** Заглушка списка блокировок в памяти - реальная интеграция обращалась бы к внешнему реестру. */
     private static final Set<String> BLOCKLIST = Set.of("тестовый нарушитель", "sanctioned test person");
 
     @Override

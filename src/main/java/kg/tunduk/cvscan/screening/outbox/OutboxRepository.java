@@ -10,10 +10,10 @@ import java.util.UUID;
 public interface OutboxRepository extends JpaRepository<OutboxEvent, UUID> {
 
     /**
-     * Locks and returns up to {@code batchSize} NEW rows, skipping any already locked by a
-     * concurrent poller (another instance, or another thread) instead of blocking on them -
-     * this is what makes it safe to run the publisher on multiple app instances at once.
-     * Native, because {@code FOR UPDATE SKIP LOCKED} has no JPA Criteria/JPQL equivalent.
+     * Блокирует и возвращает до {@code batchSize} строк NEW, пропуская те, что уже
+     * заблокированы другим параллельным поллером (другим инстансом или потоком), вместо ожидания -
+     * именно это делает безопасным запуск publisher'а сразу на нескольких инстансах приложения.
+     * Нативный запрос, потому что у {@code FOR UPDATE SKIP LOCKED} нет аналога в JPA Criteria/JPQL.
      */
     @Query(value = "SELECT * FROM outbox_events WHERE status = 'NEW' ORDER BY created_at LIMIT :batchSize FOR UPDATE SKIP LOCKED",
             nativeQuery = true)

@@ -24,21 +24,22 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Optimistic concurrency for the override endpoint is enforced twice: first an explicit
- * comparison against the {@code expectedVersion} header (below - catches the common case,
- * a client working from a stale read, with the exact contract-format message), then JPA's
- * own {@code @Version} column on {@link ScreeningDecisionEntity}, which makes the UPDATE
- * Hibernate issues at commit a real {@code WHERE id = ? AND version = ?} compare-and-swap.
- * That second layer is what actually closes the gap if two requests both pass the first
- * check concurrently; a resulting {@code ObjectOptimisticLockingFailureException} is mapped
- * to the same 409 by {@link kg.tunduk.cvscan.screening.exception.GlobalExceptionHandler}.
+ * Оптимистичная конкурентность для эндпоинта override проверяется дважды: сначала явное
+ * сравнение с заголовком {@code expectedVersion} (ниже - покрывает частый случай, когда
+ * клиент работает с устаревшими данными, с точным сообщением по формату контракта), затем
+ * колонка {@code @Version} самого JPA на {@link ScreeningDecisionEntity}, из-за которой
+ * UPDATE, выпускаемый Hibernate при коммите, становится настоящим compare-and-swap
+ * {@code WHERE id = ? AND version = ?}. Именно второй уровень закрывает брешь, если два
+ * запроса одновременно проходят первую проверку; возникающий при этом
+ * {@code ObjectOptimisticLockingFailureException} маппится в тот же 409 через
+ * {@link kg.tunduk.cvscan.screening.exception.GlobalExceptionHandler}.
  */
 @Service
 public class DecisionOverrideService {
 
     private static final Logger log = LoggerFactory.getLogger(DecisionOverrideService.class);
 
-    /** Auth is explicitly out of scope for this task; this documents that instead of guessing an identity. */
+    /** Аутентификация намеренно вне рамок задачи; это фиксирует факт вместо угадывания личности. */
     private static final String ACTOR = "api-client";
 
     private final ScreeningDecisionRepository decisionRepository;
@@ -66,10 +67,10 @@ public class DecisionOverrideService {
         Decision newDecision = Decision.valueOf(request.getDecision().name());
         decision.applyOverride(newDecision, request.getReason());
 
-        // Flush now (rather than waiting for commit) so Hibernate actually issues the
-        // @Version UPDATE and increments decision.version in memory before we read it below
-        // for the response DTO - without this, the returned version would still show the
-        // pre-override value even though the DB row (and a subsequent GET) would be correct.
+        // Флашим сразу (не дожидаясь коммита), чтобы Hibernate выполнил UPDATE @Version и
+        // увеличил decision.version в памяти до того, как мы прочитаем его ниже для DTO
+        // ответа - иначе вернулась бы версия до override, хотя в БД (и при следующем GET)
+        // она уже была бы верной.
         decisionRepository.saveAndFlush(decision);
 
         auditRepository.save(new DecisionAuditEntity(UUID.randomUUID(), decision.getId(), AuditAction.OVERRIDDEN, ACTOR,

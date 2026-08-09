@@ -21,9 +21,9 @@ import java.util.concurrent.TimeUnit;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * An invalid business event (fails JSON Schema) is routed to screening.decision.dlq with
- * JSON Pointer diagnostics, and does not stop the next valid message from being processed.
- * Requires Docker - see README's sandbox note.
+ * Невалидное бизнес-событие (не проходит JSON Schema) направляется в screening.decision.dlq
+ * с диагностикой в виде JSON Pointer и не мешает обработке следующего валидного сообщения.
+ * Требует Docker - см. заметку про sandbox в README.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @Import(TestcontainersConfiguration.class)
@@ -70,8 +70,8 @@ class DlqIT {
             assertThat(found).as("DLQ message for %s, last seen: %s", candidateId, lastSeenPayload).isTrue();
         }
 
-        // A subsequent valid event must still be processed normally - the invalid one must
-        // not have stalled the partition.
+        // Следующее валидное событие всё равно должно обработаться нормально - невалидное
+        // не должно было заблокировать партицию.
         String validCandidateId = KafkaTestSupport.uniqueCandidateId("it-after-invalid");
         String validJson = KafkaTestSupport.sampleEventJson(validCandidateId, Instant.now());
         kafkaTemplate.send(cvParsedTopic, validCandidateId, validJson).get(10, TimeUnit.SECONDS);
@@ -80,7 +80,7 @@ class DlqIT {
                 assertThat(decisionRepository.findFirstByCandidateIdOrderByDecidedAtDesc(validCandidateId)).isPresent());
     }
 
-    /** Fails JSON Schema validation: name too short, email not a valid address. */
+    /** Не проходит валидацию JSON Schema: имя слишком короткое, email не является валидным адресом. */
     private String invalidPayload(String candidateId) throws Exception {
         String raw = KafkaTestSupport.sampleEventJson(candidateId, Instant.now());
         JsonNode node = KafkaTestSupport.readJson(raw);

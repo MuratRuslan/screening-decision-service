@@ -21,10 +21,10 @@ import java.util.Deque;
 import java.util.List;
 
 /**
- * Validates request/response XML against contract/soap/education-verification.xsd. Uses a
- * schema-validating SAX parse (rather than {@link javax.xml.validation.Validator#validate})
- * so an {@link org.xml.sax.ErrorHandler} can be paired with a {@link org.xml.sax.ContentHandler}
- * that tracks the current open-element path, giving each diagnostic a best-effort location.
+ * Проверяет XML запроса/ответа по contract/soap/education-verification.xsd. Использует
+ * SAX-парсинг с валидацией по схеме (а не {@link javax.xml.validation.Validator#validate}),
+ * чтобы {@link org.xml.sax.ErrorHandler} можно было связать с {@link org.xml.sax.ContentHandler},
+ * который отслеживает текущий путь открытых элементов — это даёт примерное расположение для каждой ошибки.
  */
 public class EducationVerificationXsdValidator {
 
@@ -58,7 +58,7 @@ public class EducationVerificationXsdValidator {
 
             @Override
             public void warning(SAXParseException e) {
-                // Schema warnings are not contract violations.
+                // Предупреждения схемы не считаются нарушением контракта.
             }
 
             @Override

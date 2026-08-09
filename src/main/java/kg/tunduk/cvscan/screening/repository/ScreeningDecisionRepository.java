@@ -14,8 +14,8 @@ public interface ScreeningDecisionRepository
     Optional<ScreeningDecisionEntity> findByCandidateIdAndParsedAt(String candidateId, Instant parsedAt);
 
     /**
-     * Multiple decisions per candidate are legitimate (re-screenings at different
-     * {@code parsedAt}); "latest" is simply the most recently decided one.
+     * У кандидата может быть несколько решений (повторный скрининг с другим
+     * {@code parsedAt}); "последнее" - это просто решение с самой поздней датой.
      */
     Optional<ScreeningDecisionEntity> findFirstByCandidateIdOrderByDecidedAtDesc(String candidateId);
 }

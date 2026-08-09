@@ -12,9 +12,9 @@ import java.nio.file.Path;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * java-senior/ is the read-only, authoritative contract reference used for grading;
- * the running application instead loads its own classpath copies so the built jar is
- * self-contained. This test fails the build the moment those copies drift apart.
+ * java-senior/ — эталонный контракт только для чтения, используемый для оценки;
+ * приложение же загружает свои копии из classpath, чтобы собранный jar был
+ * самодостаточным. Тест падает, как только эти копии расходятся.
  */
 class ContractResourcesConsistencyTest {
 

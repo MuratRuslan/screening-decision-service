@@ -29,7 +29,7 @@ import java.util.UUID;
 @Transactional(readOnly = true)
 public class DecisionQueryService {
 
-    /** Property names (not column names) - Spring Data translates them via the entity mapping. */
+    /** Имена свойств (не колонок) - Spring Data сам транслирует их через маппинг сущности. */
     private static final Map<String, String> SORTABLE_PROPERTIES = Map.of(
             "score", "score",
             "decidedAt", "decidedAt",

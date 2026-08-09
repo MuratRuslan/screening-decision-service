@@ -1,5 +1,5 @@
 package kg.tunduk.cvscan.screening.semantic;
 
-/** A criterion key from the incoming event that the catalog has no alias/id for. */
+/** Ключ критерия из входящего события, для которого в каталоге нет алиаса/id. */
 public record UnknownCriterion(String rawKey, String comment) {
 }

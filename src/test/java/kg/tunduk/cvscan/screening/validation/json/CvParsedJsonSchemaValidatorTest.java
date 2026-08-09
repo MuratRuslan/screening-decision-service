@@ -51,7 +51,7 @@ class CvParsedJsonSchemaValidatorTest {
                   "criteria": []
                 }
                 """);
-        // "email" is required but missing
+        // "email" обязателен, но отсутствует
 
         List<JsonPointerError> errors = validator.validate(node);
 

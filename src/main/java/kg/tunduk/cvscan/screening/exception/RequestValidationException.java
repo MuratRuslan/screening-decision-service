@@ -4,7 +4,7 @@ import kg.tunduk.cvscan.screening.generated.rest.model.ErrorResponseDetailsInner
 
 import java.util.List;
 
-/** 400 VALIDATION_ERROR for checks that need application state, not just Bean Validation. */
+/** 400 VALIDATION_ERROR для проверок, которым нужно состояние приложения, а не только Bean Validation. */
 public class RequestValidationException extends RuntimeException {
 
     private final List<ErrorResponseDetailsInner> details;

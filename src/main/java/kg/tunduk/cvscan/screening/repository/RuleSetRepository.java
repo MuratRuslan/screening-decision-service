@@ -11,6 +11,6 @@ public interface RuleSetRepository extends JpaRepository<RuleSetEntity, UUID> {
 
     Optional<RuleSetEntity> findByPositionAndVersion(String position, String version);
 
-    /** The active rule-set for a position is the one with the greatest {@code activeFrom <= now}. */
+    /** Активный rule-set для позиции - тот, у которого {@code activeFrom <= now} максимальный. */
     Optional<RuleSetEntity> findFirstByPositionAndActiveFromLessThanEqualOrderByActiveFromDesc(String position, Instant now);
 }

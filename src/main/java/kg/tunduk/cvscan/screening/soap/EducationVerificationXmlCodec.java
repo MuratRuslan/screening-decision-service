@@ -18,7 +18,7 @@ import javax.xml.transform.stream.StreamResult;
 import java.io.StringReader;
 import java.io.StringWriter;
 
-/** Builds/parses request and response XML by hand via DOM - no JAXB, the schema is tiny enough not to need it. */
+/** Собирает и разбирает XML запроса и ответа вручную через DOM — без JAXB, схема слишком маленькая, чтобы он был нужен. */
 public class EducationVerificationXmlCodec {
 
     private static final String NS = "http://cv-scan.local/education-verification";

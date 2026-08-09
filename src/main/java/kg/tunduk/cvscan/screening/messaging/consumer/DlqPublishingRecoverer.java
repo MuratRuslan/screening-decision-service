@@ -17,10 +17,10 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * The single funnel for both "immediately non-retryable" and "retries exhausted" failures:
- * both paths go through the same {@link org.springframework.kafka.listener.DefaultErrorHandler}
- * recoverer callback, guaranteeing a uniform DLQ envelope and guaranteeing that a bad message
- * never blocks the next one on the partition (the container commits past it either way).
+ * Единая точка для ошибок "сразу без повторов" и "повторы исчерпаны":
+ * оба пути идут через один и тот же callback recoverer {@link org.springframework.kafka.listener.DefaultErrorHandler},
+ * что гарантирует единый формат DLQ-конверта и то, что плохое сообщение
+ * никогда не блокирует следующее в партиции (контейнер в любом случае коммитит дальше).
  */
 public class DlqPublishingRecoverer implements ConsumerRecordRecoverer {
 

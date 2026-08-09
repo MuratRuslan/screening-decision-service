@@ -22,11 +22,12 @@ public class KafkaConfig {
     }
 
     /**
-     * Spring Boot's Kafka autoconfiguration wires the single {@link CommonErrorHandler} bean
-     * into its auto-configured {@code ConcurrentKafkaListenerContainerFactory} automatically.
-     * Uses blocking (synchronous) retry with exponential backoff, bounded by max-elapsed-time -
-     * simple and sufficient here versus non-blocking retry-topic infrastructure. Both the
-     * "immediately non-retryable" and "retries exhausted" paths land in the same DLQ recoverer.
+     * Kafka автоконфигурация Spring Boot сама подключает единственный бин {@link CommonErrorHandler}
+     * к автоконфигурированной {@code ConcurrentKafkaListenerContainerFactory}.
+     * Используется блокирующий (синхронный) retry с экспоненциальным backoff, ограниченный
+     * max-elapsed-time - это проще и достаточно по сравнению с неблокирующей retry-topic
+     * инфраструктурой. И путь "сразу не подлежит retry", и путь "retry исчерпаны" попадают
+     * в один и тот же DLQ recoverer.
      */
     @Bean
     public CommonErrorHandler kafkaErrorHandler(DlqPublishingRecoverer dlqPublishingRecoverer,

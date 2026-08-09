@@ -11,9 +11,9 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Resolves raw {@code criteria[].key} values from an incoming event to canonical catalog
- * ids. Pure Java - the caller decides what to do with {@link NormalizationResult#unmapped()}
- * (see {@link UnknownKeyPolicy}).
+ * Преобразует сырые значения {@code criteria[].key} входящего события в канонические id
+ * каталога. Чистая Java - вызывающий сам решает, что делать с {@link NormalizationResult#unmapped()}
+ * (см. {@link UnknownKeyPolicy}).
  */
 public final class SemanticNormalizer {
 

@@ -6,9 +6,9 @@ import java.time.Instant;
 import java.util.List;
 
 /**
- * Published to {@code screening.decision.dlq}. {@code originalPayload} is either the
- * parsed {@link com.fasterxml.jackson.databind.JsonNode} (embedded as nested JSON) or,
- * if the message wasn't even parseable JSON, the raw string as-is.
+ * Публикуется в {@code screening.decision.dlq}. {@code originalPayload} - это либо
+ * распарсенный {@link com.fasterxml.jackson.databind.JsonNode} (вложенный как JSON), либо,
+ * если сообщение вообще не было валидным JSON, сырая строка как есть.
  */
 public record DlqEvent(
         Object originalPayload,

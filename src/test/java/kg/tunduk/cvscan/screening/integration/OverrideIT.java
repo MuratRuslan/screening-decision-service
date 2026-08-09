@@ -21,8 +21,8 @@ import org.springframework.http.ResponseEntity;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Two seeded, never-overridden decisions (V6 migration, version 1) are used - one per test
- * method - so the two scenarios don't depend on execution order. Requires Docker.
+ * Используются два seed-решения без переопределений (миграция V6, версия 1) - по одному
+ * на тестовый метод - чтобы оба сценария не зависели от порядка выполнения. Требует Docker.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Import(TestcontainersConfiguration.class)

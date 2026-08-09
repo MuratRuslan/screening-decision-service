@@ -63,10 +63,10 @@ public class ScreeningDecisionEntity {
     private Instant decidedAt;
 
     /**
-     * Doubles as both the contract's optimistic-concurrency token (the {@code expectedVersion}
-     * header on PATCH /override is compared against this) and JPA's own {@code @Version}
-     * column, so the actual UPDATE Hibernate issues is a real
-     * {@code WHERE id = ? AND version = ?} compare-and-swap - see DecisionOverrideService.
+     * Служит одновременно токеном optimistic-concurrency контракта (с ним сравнивается
+     * заголовок {@code expectedVersion} в PATCH /override) и колонкой {@code @Version} самого
+     * JPA, поэтому реальный UPDATE, который выполняет Hibernate, - это настоящий
+     * {@code WHERE id = ? AND version = ?} compare-and-swap - см. DecisionOverrideService.
      */
     @Version
     @Column(nullable = false)
@@ -99,9 +99,9 @@ public class ScreeningDecisionEntity {
         this.ruleResults = ruleResults;
         this.semanticCatalogVersion = semanticCatalogVersion;
         this.decidedAt = decidedAt;
-        // Hibernate writes whatever is in this field at INSERT time as the row's initial
-        // version (it does not force a numeric @Version to start at 0) - 1 here matches the
-        // seed migrations (V6/V7), which assume never-overridden rows start at version 1.
+        // Hibernate записывает значение этого поля при INSERT как начальную
+        // версию строки (он не заставляет числовой @Version начинаться с 0) - 1 здесь совпадает
+        // с seed-миграциями (V6/V7), которые предполагают, что неизменённые строки начинаются с версии 1.
         this.version = 1;
         this.overridden = false;
     }

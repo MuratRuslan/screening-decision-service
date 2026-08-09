@@ -125,8 +125,8 @@ class RuleSetServiceTest {
     @Test
     void rejectsAliasKeyEvenThoughItWouldResolveDuringNormalization() {
         when(ruleSetRepository.findByPositionAndVersion("java-senior", "v3")).thenReturn(Optional.empty());
-        // "spring" is a valid alias for normalizing incoming events, but rule-sets must
-        // reference the canonical id "java_spring" directly.
+        // "spring" - валидный алиас для нормализации входящих событий, но наборы правил
+        // должны ссылаться напрямую на канонический id "java_spring".
         RuleSetRequest request = new RuleSetRequest("java-senior", "v3", Instant.parse("2026-08-01T00:00:00Z").atOffset(ZoneOffset.UTC),
                 80, 45, List.of(new CriterionWeight("spring", 100)));
 

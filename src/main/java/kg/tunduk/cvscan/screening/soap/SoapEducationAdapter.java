@@ -7,11 +7,10 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 /**
- * Orchestrates: marshal request -> validate against XSD -> "call" the stub -> validate the
- * response against XSD -> unmarshal. Every exception is caught and converted to a failed
- * {@link EducationVerificationOutcome} - this adapter never throws, since it is called from
- * inside a virtual-thread precheck whose failure must not be allowed to affect the rest of
- * the pipeline.
+ * Оркестрирует: сериализация запроса -> проверка по XSD -> "вызов" заглушки -> проверка
+ * ответа по XSD -> десериализация. Все исключения перехватываются и превращаются в неудачный
+ * {@link EducationVerificationOutcome} — этот адаптер никогда не бросает исключения, так как
+ * вызывается из precheck на виртуальном потоке, чья ошибка не должна влиять на остальной пайплайн.
  */
 @Component
 public class SoapEducationAdapter {

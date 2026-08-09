@@ -5,11 +5,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * Spring Boot auto-detects any {@code com.fasterxml.jackson.databind.Module} bean and
- * registers it on the primary ObjectMapper. Without this, the OpenAPI Generator-produced
- * model classes' {@code JsonNullable<T>} fields (e.g. ErrorResponse.details,
- * DecisionResponse.overrideReason) would serialize as raw wrapper objects instead of their
- * unwrapped value.
+ * Spring Boot автоматически находит любой бин {@code com.fasterxml.jackson.databind.Module}
+ * и регистрирует его в основном ObjectMapper. Без этого поля {@code JsonNullable<T>} в
+ * моделях, сгенерированных OpenAPI Generator (например, ErrorResponse.details,
+ * DecisionResponse.overrideReason), сериализовались бы как сырые объекты-обёртки, а не как
+ * их развёрнутое значение.
  */
 @Configuration
 public class JacksonConfig {

@@ -12,13 +12,14 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Runs all registered {@link PrecheckCheck}s in parallel on virtual threads, each bounded by
- * its own timeout. Concurrency toward the (simulated) external dependency is bounded by a
- * {@link Semaphore}, not the executor itself: virtual threads are cheap to create by the
- * thousand, so limiting thread count would not actually protect a downstream dependency -
- * the semaphore caps concurrent *calls* regardless of how many virtual threads are waiting
- * on {@code acquire()}, and {@code Semaphore.acquire()} parks the virtual thread without
- * pinning its carrier (unlike a {@code synchronized} block, deliberately avoided here).
+ * Запускает все зарегистрированные {@link PrecheckCheck} параллельно на виртуальных
+ * потоках, каждый со своим тайм-аутом. Конкурентность к (имитируемой) внешней зависимости
+ * ограничивается {@link Semaphore}, а не самим executor'ом: виртуальные потоки дёшево
+ * создавать тысячами, поэтому ограничение числа потоков не защитило бы зависимость -
+ * семафор ограничивает именно количество одновременных *вызовов* независимо от того,
+ * сколько виртуальных потоков ждут на {@code acquire()}, а {@code Semaphore.acquire()}
+ * паркует виртуальный поток, не блокируя его carrier-поток (в отличие от блока
+ * {@code synchronized}, который здесь намеренно не используется).
  */
 @Component
 public class PrecheckOrchestrator {
@@ -67,7 +68,7 @@ public class PrecheckOrchestrator {
             Thread.currentThread().interrupt();
             return new PrecheckResult(check.name(), PrecheckStatus.FAILED, "Прервано во время ожидания семафора", elapsedMs(start));
         } catch (Exception e) {
-            // A single check's failure must never take down the whole consumer.
+            // Падение одной проверки не должно ронять весь consumer.
             return new PrecheckResult(check.name(), PrecheckStatus.FAILED, "Ошибка допроверки: " + e.getMessage(), elapsedMs(start));
         }
     }

@@ -9,9 +9,9 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.regex.Pattern;
 
 /**
- * Stands in for the real external education-verification SOAP service, which TASK.md says
- * is out of scope to actually build. Genuinely round-trips through XML strings (not domain
- * objects) so it exercises the codec/XSD path the way a real remote call would.
+ * Заглушка вместо реального внешнего SOAP-сервиса проверки образования — по TASK.md
+ * его реализация не входит в задачу. По-настоящему сериализует в XML-строки (а не
+ * доменные объекты), чтобы проверить путь кодек/XSD так же, как при реальном вызове.
  */
 @Component
 public class EducationVerificationStub {

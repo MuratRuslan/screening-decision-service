@@ -44,7 +44,7 @@ class DecisionOverrideServiceTest {
         return new DecisionOverrideService(decisionRepository, auditRepository, tracer);
     }
 
-    /** ScreeningDecisionEntity initializes {@code version = 1} for a never-yet-overridden decision. */
+    /** ScreeningDecisionEntity инициализирует {@code version = 1} для ещё не переопределённого решения. */
     private ScreeningDecisionEntity newDecision() {
         return new ScreeningDecisionEntity(UUID.randomUUID(), "senior-test",
                 Instant.parse("2026-06-01T00:00:00Z"), "Тест Тестов", "test@example.com", "java-senior",

@@ -3,10 +3,10 @@ package kg.tunduk.cvscan.screening.precheck;
 import kg.tunduk.cvscan.screening.generated.kafka.CvParsedEvent;
 
 /**
- * One I/O-bound pre-decision check. Implementations perform their own simulated latency and
- * must never throw - {@link PrecheckOrchestrator} defends against that too, but a check
- * returning {@link PrecheckStatus#FAILED} explicitly is preferred over relying on the
- * orchestrator's catch-all.
+ * Одна I/O-зависимая допроверка перед принятием решения. Реализации сами
+ * имитируют задержку и не должны бросать исключения - {@link PrecheckOrchestrator}
+ * тоже от этого защищается, но лучше явно вернуть {@link PrecheckStatus#FAILED},
+ * чем полагаться на catch-all оркестратора.
  */
 public interface PrecheckCheck {
 

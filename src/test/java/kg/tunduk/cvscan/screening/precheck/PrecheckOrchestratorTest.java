@@ -64,7 +64,7 @@ class PrecheckOrchestratorTest {
 
             assertThat(results).hasSize(2);
             assertThat(results).allSatisfy(r -> assertThat(r.status()).isEqualTo(PrecheckStatus.PASSED));
-            // Sequential would be >= 400ms; parallel should be close to the single 200ms sleep.
+            // Последовательно было бы >= 400мс; параллельно должно быть близко к одному sleep в 200мс.
             assertThat(elapsedMs).isLessThan(350);
         }
     }
@@ -116,7 +116,7 @@ class PrecheckOrchestratorTest {
             orchestrator.runAll(EVENT);
             long elapsedMs = (System.nanoTime() - start) / 1_000_000;
 
-            // With only 1 permit, the two 150ms calls are forced serial: ~300ms, not ~150ms.
+            // При всего 1 разрешении оба вызова по 150мс выполняются последовательно: ~300мс, а не ~150мс.
             assertThat(elapsedMs).isGreaterThanOrEqualTo(280);
         }
     }

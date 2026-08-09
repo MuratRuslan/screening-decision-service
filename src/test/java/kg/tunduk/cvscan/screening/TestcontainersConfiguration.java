@@ -7,7 +7,7 @@ import org.testcontainers.kafka.KafkaContainer;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
-// public: reused from the integration/ subpackage by the Testcontainers-backed IT suite.
+// public: переиспользуется из подпакета integration/ в IT-тестах на Testcontainers.
 @TestConfiguration(proxyBeanMethods = false)
 public class TestcontainersConfiguration {
 

@@ -57,7 +57,7 @@ public class RuleSetService {
         return RuleSetMapper.toResponse(entity);
     }
 
-    /** Rule-sets may only reference canonical ids from the semantic catalog, never raw aliases. */
+    /** Rule-set может ссылаться только на канонические id семантического каталога, не на алиасы. */
     private void validateWeightsAgainstCatalog(List<CriterionWeight> weights) {
         List<ErrorResponseDetailsInner> unknown = new ArrayList<>();
         for (int i = 0; i < weights.size(); i++) {

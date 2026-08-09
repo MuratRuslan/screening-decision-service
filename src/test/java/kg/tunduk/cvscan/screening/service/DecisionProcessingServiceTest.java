@@ -210,9 +210,9 @@ class DecisionProcessingServiceTest {
 
         DecisionProcessingService service = service(UnknownKeyPolicy.AUDIT);
 
-        // CvParsedListener no longer calls process(String) directly - it splits the raw
-        // payload into a validated CvParsedEvent first, then processes that. Exercise the
-        // same two-step sequence here.
+        // CvParsedListener больше не вызывает process(String) напрямую - сначала он разбирает
+        // сырой payload в валидированный CvParsedEvent, затем обрабатывает его. Здесь
+        // воспроизводится та же двухшаговая последовательность.
         CvParsedEvent event = service.parseAndValidate(validSampleJson);
         assertThat(event.getCandidateId()).isEqualTo("senior-asanov-bakyt");
 
@@ -232,7 +232,7 @@ class DecisionProcessingServiceTest {
 
         DecisionProcessingService service = service(UnknownKeyPolicy.AUDIT);
 
-        // Must not throw - a duplicate is expected steady-state behavior, not a processing error.
+        // Не должно бросать исключение - дубликат это ожидаемое штатное поведение, а не ошибка обработки.
         service.process(validSampleJson);
     }
 }
