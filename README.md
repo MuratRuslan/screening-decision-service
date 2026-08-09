@@ -5,10 +5,13 @@
 публикует результат (`screening.decision.created`) через транзакционный outbox. Предоставляет
 REST API для наборов правил, решений и ручного переопределения.
 
-```
-cv-parser  →  [Kafka: cv.parsed]  →  screening-decision-service  →  [Kafka: screening.decision.created]  →  candidate-service
-                                      │
-                                      └→ [Kafka: screening.decision.dlq]
+```mermaid
+flowchart LR
+    CP[cv-parser] -->|"Kafka: cv.parsed"| SVC[screening-decision-service]
+    SVC -->|"Kafka: screening.decision.created"| CS[candidate-service]
+    SVC -->|"Kafka: screening.decision.dlq"| DLQ[(DLQ)]
+    HR[Клиент REST API] -->|"rule-sets, decisions, override"| SVC
+    SVC --- PG[(PostgreSQL)]
 ```
 
 Реализовано для тестового задания `java-senior` из [`java-senior/TASK.md`](java-senior/TASK.md).
@@ -25,16 +28,10 @@ PostgreSQL, Apache Kafka, Flyway, Gradle, JUnit 5 + Mockito, Testcontainers, spr
 OpenAPI, Micrometer/Prometheus, `com.networknt:json-schema-validator`. Без SOAP-фреймворка
 и без JAXB — см. [§ SOAP/XML-адаптер](#soapxml-адаптер-для-образования).
 
-**Отклонение от исходного шаблона, задокументированное заранее:** проект, сгенерированный
-Spring Initializr, на основе которого это было построено, фиксировал Spring Boot **4.1.0** с
-нестандартными/preview идентификаторами артефактов. В TASK.md заявленный стек — «Spring Boot
-3.x», поэтому сборка была намеренно понижена до **3.5.3** с реальными, стандартными
-идентификаторами артефактов (`spring-boot-starter-web`, `spring-boot-starter-data-jpa`,
-`spring-kafka`, `flyway-core`, ...). `ext['testcontainers.version'] = '2.0.5'` в `build.gradle`
-явно фиксирует версию Testcontainers, поскольку управляемый BOM Boot 3.5.3 иначе разрешил бы
-более старую ветку 1.x, несовместимую с уже присутствующей `TestcontainersConfiguration`
-(структура пакетов `org.testcontainers.kafka.KafkaContainer` /
-`org.testcontainers.postgresql.PostgreSQLContainer`).
+`ext['testcontainers.version'] = '2.0.5'` в `build.gradle` фиксирует версию Testcontainers
+явно: управляемый BOM Spring Boot иначе разрешил бы более старую ветку 1.x, несовместимую с
+пакетами `org.testcontainers.kafka.KafkaContainer` / `org.testcontainers.postgresql.PostgreSQLContainer`,
+которые использует `TestcontainersConfiguration`.
 
 ## Генерация кода по контракту (contract-first)
 
@@ -96,7 +93,7 @@ docker compose up -d          # Postgres 16 + Kafka (KRaft) + kafka-init + kafka
   (`localhost:4317`/`4318`, конфиг в `otel-collector-config.yaml`) и пишет их в свой stdout
   (`docker compose logs -f otel-collector`) — см. [§ Трассировка OpenTelemetry](#трассировка-opentelemetry).
 
-Kafka теперь слушает на двух listener'ах: `PLAINTEXT` (`localhost:9092`) — для приложения,
+Kafka слушает на двух listener'ах: `PLAINTEXT` (`localhost:9092`) — для приложения,
 запущенного на хосте через `./gradlew bootRun`, и `INTERNAL` (`kafka:29092`) — для контейнеров
 внутри той же docker-сети (kafka-ui, otel-collector), обращающихся к брокеру по имени сервиса.
 
@@ -126,32 +123,6 @@ JSON Schema (пустое `name`, некорректный `email` — отпр�
 `parsedAt` — молча игнорируется, без второго решения и без второго
 `screening.decision.created`).
 
-> **Проверено с Docker:** изначально эта реализация была построена в песочнице без Docker (там
-> могли выполняться только 68 unit-тестов, не зависящих от Docker). С тех пор она была повторно
-> проверена с доступным Docker: `./gradlew test` проходит **79 из 79**, включая все пять классов
-> интеграционных тестов на Testcontainers и собственный тест загрузки контекста приложения на
-> реальных Postgres и Kafka. `docker compose up -d && ./gradlew bootRun` также был запущен
-> напрямую — публикация тестового события произвела решение, строку outbox, дошедшую до статуса
-> `SENT`, и реальное сообщение `screening.decision.created` в брокере с совпадающими
-> `decisionId`/`score`; `/actuator/health` и `/actuator/prometheus` отвечали корректно.
->
-> В ходе этой сквозной проверки были найдены и теперь исправлены три реальных бага:
-> 1. Миграция-сид V6 использовала неверные значения JSON-перечисления для
->    `RuleEvaluation.result` (`NO`/`PARTIAL`, скопированные из не связанного с этим перечисления
->    `CriterionResult`, вместо реальных `FAIL`/`WARN` из `RuleResult`) — это ломало
->    JSON-десериализацию для 11 из 13 засеянных решений сразу при их чтении через JPA.
-> 2. Ответ `PATCH /override` показывал *предыдущую* (до переопределения) `version`, потому что
->    поле `@Version` сущности в памяти обновляется только когда Hibernate реально сбрасывает
->    (flush) UPDATE, что по умолчанию происходит при коммите транзакции — уже после того, как
->    DTO ответа был построен. Исправлено явным flush перед построением ответа.
-> 3. Сервис Kafka в `docker-compose.yml` использовал конфигурацию с двумя listener'ами, которую
->    официальный образ `apache/kafka` отклонял при старте (`advertised.listeners` в итоге
->    содержал немаршрутизируемый `0.0.0.0`); заменено на более простую схему с одним listener'ом
->    в стиле KRaft из официального quickstart-примера compose для Kafka. (Позже, при добавлении
->    kafka-ui и otel-collector как контейнеров, снова понадобился второй listener — на этот раз
->    с явным `advertised.listeners` на каждый из них (`localhost:9092` для хоста,
->    `kafka:29092` для docker-сети), что и отличает эту схему от изначально сломанной.)
-
 `kafka-console-producer.sh`/`.bat` тоже подходят — но учтите, что он отправляет каждую **строку**
 stdin как отдельное сообщение, поэтому многострочный отформатированный JSON нужно сначала
 схлопнуть в одну строку (именно это делает `tr -d '\n'` выше); если пропустить этот шаг, одно
@@ -177,6 +148,82 @@ stdin как отдельное сообщение, поэтому многос�
 ## Архитектура и ключевые решения
 
 Полные детали в [`docs/ADR-001.md`](docs/ADR-001.md). Кратко:
+
+### Слои пакетов
+
+```mermaid
+flowchart TD
+    subgraph API["controller/"]
+        RC[RuleSetController]
+        DC[DecisionController]
+    end
+    subgraph SVC["service/"]
+        RS[RuleSetService]
+        DQ[DecisionQueryService]
+        DO[DecisionOverrideService]
+        DPS[DecisionProcessingService]
+        DPer[DecisionPersistenceService]
+    end
+    subgraph CORE["Доменная логика (чистая Java, без Spring)"]
+        SC[scoring/]
+        SEM[semantic/]
+    end
+    subgraph AUX["Вспомогательные проверки"]
+        PRE[precheck/]
+        SOAP[soap/]
+    end
+    subgraph DATA["repository/ + model/ (Spring Data JPA)"]
+        REPO[(PostgreSQL)]
+    end
+    subgraph OUT["outbox/"]
+        OB[OutboxPublisher]
+    end
+    subgraph MSG["messaging/"]
+        CL[CvParsedListener]
+        EP[DecisionEventProducer]
+    end
+
+    API --> SVC
+    SVC --> CORE
+    SVC --> AUX
+    SVC --> DATA
+    DATA --> OUT
+    OUT --> EP
+    MSG --> DPS
+    MSG -.Kafka.-> EP
+```
+
+`mapper/` — граница между сгенерированными REST/Kafka DTO и hand-written domain/JPA-типами
+(`scoring.*`, `model.*`); `exception/` — доменные исключения и `GlobalExceptionHandler`;
+`config/`, `observability/`, `validation/json/` — сквозная инфраструктура.
+
+### Обработка события `cv.parsed`
+
+```mermaid
+sequenceDiagram
+    participant K as Kafka (cv.parsed)
+    participant L as CvParsedListener
+    participant P as DecisionProcessingService
+    participant V as CvParsedJsonSchemaValidator
+    participant N as SemanticNormalizer
+    participant PC as PrecheckOrchestrator
+    participant SC as ScoreCalculator
+    participant DP as DecisionPersistenceService
+    participant DB as PostgreSQL
+
+    K->>L: ConsumerRecord(key=candidateId, value=raw JSON)
+    L->>P: parseAndValidate(rawPayload)
+    P->>V: validate(JsonNode) — до databind'а
+    Note over P,V: невалидно → NonRetryableEventException → в DLQ
+    P->>P: databind в типизированный CvParsedEvent
+    L->>P: process(event)
+    P->>N: normalize(criteria) — алиасы → канонические ключи
+    P->>PC: runAll(event) — 3 допроверки параллельно
+    P->>SC: calculate(ruleSet, normalizedCriteria)
+    P->>DP: persist(...)
+    DP->>DB: decision + audit(CREATED) + outbox(NEW) — одна транзакция
+    Note over DP,DB: дубликат (candidate_id, parsed_at) → перехватывается и игнорируется
+```
 
 ### Идемпотентность
 
@@ -213,6 +260,17 @@ LOCKED` (безопасно при нескольких экземплярах �
 **at-least-once**: сбой между подтверждением Kafka и коммитом транзакции приведёт к повторной
 отправке строки на следующем опросе; стабильный `eventId` события — это то, что позволяет
 downstream-консьюмеру дедуплицировать.
+
+```mermaid
+flowchart TD
+    A["DecisionPersistenceService.persist(...)<br/>@Transactional"] -->|1 транзакция| B[(screening_decisions)]
+    A -->|1 транзакция| C[(decision_audit)]
+    A -->|1 транзакция| D[(outbox_events, status=NEW)]
+    E["OutboxPublisher<br/>@Scheduled fixedDelay=1000ms"] -->|"SELECT ... FOR UPDATE SKIP LOCKED"| D
+    E -->|"kafkaTemplate.send(...).get(timeout)"| F[Kafka: screening.decision.created]
+    E -->|успех| G["status=SENT"]
+    E -->|неудача| H["retry_count++, last_error=...<br/>status остаётся NEW"]
+```
 
 ### Конкурентное ручное переопределение
 
@@ -350,8 +408,7 @@ JSON Schema (валидный пример + вручную составленн
 
 Интеграционные тесты (`src/test/.../integration/`, Testcontainers с **реальными** Postgres и
 Kafka через существующую `TestcontainersConfiguration`) покрывают сквозные сценарии, описанные в
-TASK.md — актуальный список см. в этом пакете. Для них требуется Docker; все проходят — см.
-примечание о проверке выше.
+TASK.md — актуальный список см. в этом пакете. Для их запуска нужен Docker.
 
 ## Что не сделано / известные ограничения
 
