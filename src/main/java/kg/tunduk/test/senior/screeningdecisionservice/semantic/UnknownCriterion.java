@@ -1,5 +1,0 @@
-package kg.tunduk.test.senior.screeningdecisionservice.semantic;
-
-/** A criterion key from the incoming event that the catalog has no alias/id for. */
-public record UnknownCriterion(String rawKey, String comment) {
-}

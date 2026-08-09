@@ -6,7 +6,7 @@ plugins {
     id 'org.jsonschema2pojo' version '1.3.3'
 }
 
-group = 'kg.tunduk.test.senior'
+group = 'kg.tunduk.cvscan'
 version = '0.0.1-SNAPSHOT'
 description = 'Screening decision service'
 
@@ -84,9 +84,9 @@ openApiGenerate {
     generatorName = "spring"
     inputSpec = "$rootDir/java-senior/contract/openapi.yaml"
     outputDir = openApiGeneratedDir.get().asFile.path
-    apiPackage = "kg.tunduk.test.senior.screeningdecisionservice.generated.rest.api"
-    modelPackage = "kg.tunduk.test.senior.screeningdecisionservice.generated.rest.model"
-    invokerPackage = "kg.tunduk.test.senior.screeningdecisionservice.generated.rest.invoker"
+    apiPackage = "kg.tunduk.cvscan.screening.generated.rest.api"
+    modelPackage = "kg.tunduk.cvscan.screening.generated.rest.model"
+    invokerPackage = "kg.tunduk.cvscan.screening.generated.rest.invoker"
     // Models only - no api interfaces/controllers/supporting files, since REST
     // controllers are hand-written and only need the request/response types.
     globalProperties.set(["models": ""])
@@ -104,7 +104,7 @@ def jsonSchema2PojoGeneratedDir = layout.buildDirectory.dir("generated/jsonschem
 jsonSchema2Pojo {
     source = files("$rootDir/java-senior/contract/json-schema/cv-parsed.schema.json")
     targetDirectory = jsonSchema2PojoGeneratedDir.get().asFile
-    targetPackage = "kg.tunduk.test.senior.screeningdecisionservice.generated.kafka"
+    targetPackage = "kg.tunduk.cvscan.screening.generated.kafka"
     dateTimeType = "java.time.Instant"
     includeJsr303Annotations = false
     generateBuilders = false

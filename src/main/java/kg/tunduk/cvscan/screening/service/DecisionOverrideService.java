@@ -1,0 +1,92 @@
+package kg.tunduk.cvscan.screening.service;
+
+import io.micrometer.tracing.Tracer;
+import kg.tunduk.cvscan.screening.generated.rest.model.DecisionOverrideRequest;
+import kg.tunduk.cvscan.screening.generated.rest.model.DecisionResponse;
+import kg.tunduk.cvscan.screening.exception.NotFoundException;
+import kg.tunduk.cvscan.screening.exception.VersionConflictException;
+import kg.tunduk.cvscan.screening.mapper.DecisionMapper;
+import kg.tunduk.cvscan.screening.model.AuditAction;
+import kg.tunduk.cvscan.screening.model.DecisionAuditEntity;
+import kg.tunduk.cvscan.screening.model.ScreeningDecisionEntity;
+import kg.tunduk.cvscan.screening.observability.Spans;
+import kg.tunduk.cvscan.screening.repository.DecisionAuditRepository;
+import kg.tunduk.cvscan.screening.repository.ScreeningDecisionRepository;
+import kg.tunduk.cvscan.screening.scoring.Decision;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Instant;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.UUID;
+
+/**
+ * Optimistic concurrency for the override endpoint is enforced twice: first an explicit
+ * comparison against the {@code expectedVersion} header (below - catches the common case,
+ * a client working from a stale read, with the exact contract-format message), then JPA's
+ * own {@code @Version} column on {@link ScreeningDecisionEntity}, which makes the UPDATE
+ * Hibernate issues at commit a real {@code WHERE id = ? AND version = ?} compare-and-swap.
+ * That second layer is what actually closes the gap if two requests both pass the first
+ * check concurrently; a resulting {@code ObjectOptimisticLockingFailureException} is mapped
+ * to the same 409 by {@link kg.tunduk.cvscan.screening.exception.GlobalExceptionHandler}.
+ */
+@Service
+public class DecisionOverrideService {
+
+    private static final Logger log = LoggerFactory.getLogger(DecisionOverrideService.class);
+
+    /** Auth is explicitly out of scope for this task; this documents that instead of guessing an identity. */
+    private static final String ACTOR = "api-client";
+
+    private final ScreeningDecisionRepository decisionRepository;
+    private final DecisionAuditRepository auditRepository;
+    private final Tracer tracer;
+
+    public DecisionOverrideService(ScreeningDecisionRepository decisionRepository, DecisionAuditRepository auditRepository,
+                                    Tracer tracer) {
+        this.decisionRepository = decisionRepository;
+        this.auditRepository = auditRepository;
+        this.tracer = tracer;
+    }
+
+    @Transactional
+    public DecisionResponse override(UUID id, int expectedVersion, DecisionOverrideRequest request) {
+        Spans.tag(tracer, "decisionId", String.valueOf(id));
+        ScreeningDecisionEntity decision = decisionRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Решение " + id + " не найдено"));
+
+        if (decision.getVersion() != expectedVersion) {
+            throw VersionConflictException.expectedButActual(expectedVersion, decision.getVersion());
+        }
+
+        Decision previousDecision = decision.getDecision();
+        Decision newDecision = Decision.valueOf(request.getDecision().name());
+        decision.applyOverride(newDecision, request.getReason());
+
+        // Flush now (rather than waiting for commit) so Hibernate actually issues the
+        // @Version UPDATE and increments decision.version in memory before we read it below
+        // for the response DTO - without this, the returned version would still show the
+        // pre-override value even though the DB row (and a subsequent GET) would be correct.
+        decisionRepository.saveAndFlush(decision);
+
+        auditRepository.save(new DecisionAuditEntity(UUID.randomUUID(), decision.getId(), AuditAction.OVERRIDDEN, ACTOR,
+                overridePayload(previousDecision, request, expectedVersion), Instant.now()));
+
+        log.info("Decision manually overridden decisionId={} candidateId={} previousDecision={} newDecision={} actor={}",
+                decision.getId(), decision.getCandidateId(), previousDecision, newDecision, ACTOR);
+
+        return DecisionMapper.toResponse(decision);
+    }
+
+    private Map<String, Object> overridePayload(Decision previousDecision, DecisionOverrideRequest request, int expectedVersion) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("previousDecision", previousDecision.name());
+        payload.put("newDecision", request.getDecision().name());
+        payload.put("expectedVersion", expectedVersion);
+        payload.put("reason", request.getReason());
+        return payload;
+    }
+}
