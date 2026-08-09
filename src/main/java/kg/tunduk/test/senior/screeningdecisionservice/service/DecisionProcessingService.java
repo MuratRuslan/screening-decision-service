@@ -65,11 +65,31 @@ public class DecisionProcessingService {
         this.unknownKeyPolicy = unknownKeyPolicy;
     }
 
+    /**
+     * Convenience entry point for callers that only have the raw Kafka payload (e.g. tests).
+     * {@link kg.tunduk.test.senior.screeningdecisionservice.messaging.consumer.CvParsedListener}
+     * calls {@link #parseAndValidate} and {@link #process(CvParsedEvent)} separately instead,
+     * so it can log/inspect the typed event before handing it off.
+     */
     public void process(String rawPayload) {
+        process(parseAndValidate(rawPayload));
+    }
+
+    /**
+     * Parses the raw payload and validates it against the JSON Schema - deliberately kept on
+     * the raw {@link JsonNode}, before any databinding, since that is what gives schema
+     * violations a precise JSON Pointer (e.g. {@code /criteria/0/key}); a generic Kafka
+     * JsonDeserializer bound straight to {@link CvParsedEvent} would skip this check entirely
+     * and only catch structural JSON errors, not contract violations like a bad email format
+     * or an out-of-pattern criterion key.
+     */
+    public CvParsedEvent parseAndValidate(String rawPayload) {
         JsonNode node = parseJson(rawPayload);
         validateAgainstSchema(node);
+        return databind(node);
+    }
 
-        CvParsedEvent event = databind(node);
+    public void process(CvParsedEvent event) {
         MDC.put("eventId", String.valueOf(event.getEventId()));
         MDC.put("candidateId", event.getCandidateId());
         log.info("Consumed cv.parsed event candidateId={} position={} parsedAt={}",

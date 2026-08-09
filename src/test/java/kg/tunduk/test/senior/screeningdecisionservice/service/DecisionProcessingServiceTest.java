@@ -199,6 +199,26 @@ class DecisionProcessingServiceTest {
     }
 
     @Test
+    void parseAndValidateThenProcessMirrorsWhatTheKafkaListenerDoes() {
+        when(ruleSetRepository.findFirstByPositionAndActiveFromLessThanEqualOrderByActiveFromDesc(eq("java-senior"), any(Instant.class)))
+                .thenReturn(Optional.of(javaSeniorRuleSet()));
+        when(precheckOrchestrator.runAll(any())).thenReturn(List.of());
+
+        DecisionProcessingService service = service(UnknownKeyPolicy.AUDIT);
+
+        // CvParsedListener no longer calls process(String) directly - it splits the raw
+        // payload into a validated CvParsedEvent first, then processes that. Exercise the
+        // same two-step sequence here.
+        CvParsedEvent event = service.parseAndValidate(validSampleJson);
+        assertThat(event.getCandidateId()).isEqualTo("senior-asanov-bakyt");
+
+        service.process(event);
+
+        verify(decisionPersistenceService).persist(eq(event), any(RuleSetEntity.class),
+                any(ScoreOutcome.class), eq(criteriaCatalog.version()), any(NormalizationResult.class), any());
+    }
+
+    @Test
     void duplicateEventDoesNotPropagateException() {
         when(ruleSetRepository.findFirstByPositionAndActiveFromLessThanEqualOrderByActiveFromDesc(eq("java-senior"), any(Instant.class)))
                 .thenReturn(Optional.of(javaSeniorRuleSet()));
