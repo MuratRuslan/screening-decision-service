@@ -5,13 +5,10 @@
 публикует результат (`screening.decision.created`) через транзакционный outbox. Предоставляет
 REST API для наборов правил, решений и ручного переопределения.
 
-```mermaid
-flowchart LR
-    CP[cv-parser] -->|"Kafka: cv.parsed"| SVC[screening-decision-service]
-    SVC -->|"Kafka: screening.decision.created"| CS[candidate-service]
-    SVC -->|"Kafka: screening.decision.dlq"| DLQ[(DLQ)]
-    HR[Клиент REST API] -->|"rule-sets, decisions, override"| SVC
-    SVC --- PG[(PostgreSQL)]
+```
+cv-parser  →  [Kafka: cv.parsed]  →  screening-decision-service  →  [Kafka: screening.decision.created]  →  candidate-service
+                                      │
+                                      └→ [Kafka: screening.decision.dlq]
 ```
 
 Реализовано для тестового задания `java-senior` из [`java-senior/TASK.md`](java-senior/TASK.md).
@@ -151,46 +148,26 @@ stdin как отдельное сообщение, поэтому многос�
 
 ### Слои пакетов
 
-```mermaid
-flowchart TD
-    subgraph API["controller/"]
-        RC[RuleSetController]
-        DC[DecisionController]
-    end
-    subgraph SVC["service/"]
-        RS[RuleSetService]
-        DQ[DecisionQueryService]
-        DO[DecisionOverrideService]
-        DPS[DecisionProcessingService]
-        DPer[DecisionPersistenceService]
-    end
-    subgraph CORE["Доменная логика (чистая Java, без Spring)"]
-        SC[scoring/]
-        SEM[semantic/]
-    end
-    subgraph AUX["Вспомогательные проверки"]
-        PRE[precheck/]
-        SOAP[soap/]
-    end
-    subgraph DATA["repository/ + model/ (Spring Data JPA)"]
-        REPO[(PostgreSQL)]
-    end
-    subgraph OUT["outbox/"]
-        OB[OutboxPublisher]
-    end
-    subgraph MSG["messaging/"]
-        CL[CvParsedListener]
-        EP[DecisionEventProducer]
-    end
+```
+controller/  (RuleSetController, DecisionController)
+      │
+      ▼
+service/     (RuleSetService, DecisionQueryService, DecisionOverrideService,
+      │        DecisionProcessingService, DecisionPersistenceService)
+      │
+      ├──────────────┬────────────────────┬───────────────────────┐
+      ▼               ▼                    ▼                       ▼
+  scoring/         semantic/            precheck/                soap/
+  (чистая Java,    (нормализация        (3 параллельные          (SOAP/XML-адаптер
+  без Spring)      алиасов)             допроверки)              образования)
+      │
+      ▼
+repository/ + model/  (Spring Data JPA)  ──▶  PostgreSQL
+      │
+      ▼
+outbox/ (OutboxPublisher)  ──▶  messaging/ (DecisionEventProducer)  ──▶  Kafka
 
-    API --> SVC
-    SVC --> CORE
-    SVC --> AUX
-    SVC --> DATA
-    DATA --> OUT
-    OUT --> EP
-    MSG --> DPS
-    MSG -.Kafka.-> EP
+messaging/ (CvParsedListener)  ──▶  service/ (DecisionProcessingService)
 ```
 
 `mapper/` — граница между сгенерированными REST/Kafka DTO и hand-written domain/JPA-типами
@@ -199,30 +176,28 @@ flowchart TD
 
 ### Обработка события `cv.parsed`
 
-```mermaid
-sequenceDiagram
-    participant K as Kafka (cv.parsed)
-    participant L as CvParsedListener
-    participant P as DecisionProcessingService
-    participant V as CvParsedJsonSchemaValidator
-    participant N as SemanticNormalizer
-    participant PC as PrecheckOrchestrator
-    participant SC as ScoreCalculator
-    participant DP as DecisionPersistenceService
-    participant DB as PostgreSQL
-
-    K->>L: ConsumerRecord(key=candidateId, value=raw JSON)
-    L->>P: parseAndValidate(rawPayload)
-    P->>V: validate(JsonNode) — до databind'а
-    Note over P,V: невалидно → NonRetryableEventException → в DLQ
-    P->>P: databind в типизированный CvParsedEvent
-    L->>P: process(event)
-    P->>N: normalize(criteria) — алиасы → канонические ключи
-    P->>PC: runAll(event) — 3 допроверки параллельно
-    P->>SC: calculate(ruleSet, normalizedCriteria)
-    P->>DP: persist(...)
-    DP->>DB: decision + audit(CREATED) + outbox(NEW) — одна транзакция
-    Note over DP,DB: дубликат (candidate_id, parsed_at) → перехватывается и игнорируется
+```
+Kafka (cv.parsed)
+   │  ConsumerRecord(key=candidateId, value=raw JSON)
+   ▼
+CvParsedListener.onMessage(...)
+   │  parseAndValidate(rawPayload)
+   ▼
+CvParsedJsonSchemaValidator.validate(JsonNode)   — до databind'а
+   │  невалидно → NonRetryableEventException → DLQ
+   ▼
+databind → типизированный CvParsedEvent
+   ▼
+DecisionProcessingService.process(event)
+   ├─▶ SemanticNormalizer.normalize(criteria)   — алиасы → канонические ключи
+   ├─▶ PrecheckOrchestrator.runAll(event)        — 3 допроверки параллельно
+   ├─▶ ScoreCalculator.calculate(ruleSet, ...)   — score + decision
+   ▼
+DecisionPersistenceService.persist(...)
+   │  decision + audit(CREATED) + outbox(NEW) — одна транзакция
+   │  дубликат (candidate_id, parsed_at) → перехватывается и игнорируется
+   ▼
+PostgreSQL
 ```
 
 ### Идемпотентность
@@ -261,15 +236,24 @@ LOCKED` (безопасно при нескольких экземплярах �
 отправке строки на следующем опросе; стабильный `eventId` события — это то, что позволяет
 downstream-консьюмеру дедуплицировать.
 
-```mermaid
-flowchart TD
-    A["DecisionPersistenceService.persist(...)<br/>@Transactional"] -->|1 транзакция| B[(screening_decisions)]
-    A -->|1 транзакция| C[(decision_audit)]
-    A -->|1 транзакция| D[(outbox_events, status=NEW)]
-    E["OutboxPublisher<br/>@Scheduled fixedDelay=1000ms"] -->|"SELECT ... FOR UPDATE SKIP LOCKED"| D
-    E -->|"kafkaTemplate.send(...).get(timeout)"| F[Kafka: screening.decision.created]
-    E -->|успех| G["status=SENT"]
-    E -->|неудача| H["retry_count++, last_error=...<br/>status остаётся NEW"]
+```
+DecisionPersistenceService.persist(...)  @Transactional
+   ├─▶ INSERT screening_decisions
+   ├─▶ INSERT decision_audit
+   └─▶ INSERT outbox_events (status=NEW)
+
+                                          раз в 1с (app.outbox.poll-interval-ms)
+                                                          │
+                                                          ▼
+                          OutboxPublisher: SELECT ... FOR UPDATE SKIP LOCKED
+                                                          │
+                                                          ▼
+                              kafkaTemplate.send(...).get(timeout)
+                                    │                              │
+                              успех │                              │ неудача
+                                    ▼                              ▼
+                     UPDATE status=SENT           retry_count++, last_error=...
+                                                   (status остаётся NEW)
 ```
 
 ### Конкурентное ручное переопределение
